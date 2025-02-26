@@ -15,6 +15,9 @@ return new class extends Migration {
             $table->foreignId('alquiler_id')->constrained()->onDelete('cascade');
             $table->foreignId('disfraz_id')->constrained()->onDelete('cascade');
             $table->decimal('precio_unitario', 10, 2)->default(1);
+            $table->integer('cantidad');
+            $table->json('piezas_seleccionadas');
+            $table->json('piezas_reservadas')->nullable();
             $table->timestamps();
         });
     }

@@ -9,15 +9,20 @@ class Pieza extends Model
 {
     use HasFactory;
     protected $fillable = ['name', 'tipo_id'];
-    protected $casts = [
-        'estado' => PiezaStatusEnum::class,
-    ];
+
     public function disfrazs()
     {
-        return $this->belongsToMany(Disfraz::class)->withTimestamps()->withPivot('stock', 'color', 'size', 'material');
+        return $this->belongsToMany(Disfraz::class)
+            ->withTimestamps()
+            ->withPivot('stock', 'color', 'size', 'material', 'status');
     }
     public function tipo()
     {
         return $this->belongsTo(Tipo::class, 'tipo_id');
+    }
+
+    public function disfrazPiezas()
+    {
+        return $this->hasMany(DisfrazPieza::class);
     }
 }

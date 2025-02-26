@@ -59,25 +59,48 @@ class AlquilerResource extends Resource
                             ->afterStateUpdated(function ($state, callable $set) {
                                 if ($state) {
                                     $set('precio_unitario', Disfraz::obtenerPrecio($state));
-                                    $set('piezas_disponibles', DisfrazPieza::obtenerPiezasPorDisfraz($state));
                                 } else {
                                     $set('precio_unitario', 0);
-                                    $set('piezas_disponibles', []);
                                 }
                             }),
-                        //Forms\Components\TextInput::make('stock_disponible')->label('Stock Disponible')->disabled(),
+
                         Forms\Components\CheckboxList::make('piezas_seleccionadas')
                             ->label('Selecciona las piezas a usar')
                             ->options(
                                 fn($get) => DisfrazPieza::where('disfraz_id', $get('disfraz_id'))
                                     ->join('piezas', 'disfraz_pieza.pieza_id', '=', 'piezas.id') // Unir con la tabla de piezas
-                                    ->get(['piezas.id', 'piezas.name', 'disfraz_pieza.stock']) // Obtener nombre y stock
-                                    ->mapWithKeys(
-                                        fn($pieza) => [$pieza->id => "{$pieza->name} (Stock: {$pieza->stock})"]
-                                    ) // Formato "Nombre (Stock: X)"
+                                    ->get(['piezas.id', 'piezas.name', 'disfraz_pieza.stock', 'disfraz_pieza.status']) // Obtener nombre, stock y estado
+                                    ->groupBy('id') // Agrupar por pieza
+                                    ->mapWithKeys(function ($piezas) {
+                                        $pieza = $piezas->first(); // Obtener la primera entrada (ya que están agrupadas)
+                                        $stockDisponible = $piezas->where('status', 'disponible')->sum('stock');
+                                        $stockReservado = $piezas->where('status', 'reservado')->sum('stock');
+                                        return [
+                                            $pieza->id => "{$pieza->name} (Disponible: {$stockDisponible}, Reservado: {$stockReservado})",
+                                        ];
+                                    })
                                     ->toArray()
                             )
-                            ->reactive(),
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                if (!is_array($state)) {
+                                    $state = json_decode($state, true) ?? []; // Convertir JSON string a array si es necesario
+                                }
+                                if ($state) {
+                                    $stockMinimo = PHP_INT_MAX;
+                                    foreach ($state as $piezaId) {
+                                        $stockDisponible = DisfrazPieza::where('pieza_id', $piezaId)
+                                            ->where('status', 'disponible')
+                                            ->sum('stock');
+                                        // Si el stock disponible es menor que la cantidad solicitada, se ajusta
+                                        $stockMaximo = max($stockMinimo, $stockDisponible);
+                                    }
+                                    // Actualizar el máximo permitido en 'cantidad'
+                                    $set('stock_disponible', $stockMaximo);
+
+                                    // Guardar como JSON la cantidad que realmente se puede alquilar
+                                }
+                            }),
 
                         Forms\Components\TextInput::make('cantidad')
                             ->label('Cantidad')
@@ -85,13 +108,7 @@ class AlquilerResource extends Resource
                             ->minValue(1)
                             ->maxValue(fn($get) => $get('stock_disponible') ?? 0) // Evita alquilar más de lo disponible
                             ->required()
-                            ->default(fn($get) => AlquilerService::obtenerStockMinimoDisfraz($get('disfraz_id'))) // Carga el stock en edición
-                            ->afterStateUpdated(function ($state, callable $get) {
-                                $disfrazId = $get('disfraz_id');
-                                if ($disfrazId && $state > 0) {
-                                    AlquilerService::reservarPiezas($disfrazId, $state);
-                                }
-                            }),
+                            ->default(fn($get) => AlquilerService::obtenerStockMinimoDisfraz($get('disfraz_id'))), // Carga el stock en edición
                         Forms\Components\TextInput::make('precio_unitario')
                             ->label('Precio Unitario')
                             ->numeric()
@@ -122,12 +139,11 @@ class AlquilerResource extends Resource
                         ->label('Fecha de Devolución')
                         ->native(false)
                         ->required(),
-                    Forms\Components\ToggleButtons::make('status')
+                    Forms\Components\Select::make('status')
                         ->options([
                             'pendiente' => 'Pendiente',
-                            'en_progreso' => 'Alquilar',
+                            'alquilado' => 'Alquilar',
                         ])
-                        ->inline()
                         ->default('pendiente')
                         ->required(),
                 ]),
@@ -147,7 +163,7 @@ class AlquilerResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([Tables\Actions\EditAction::make()])
+            ->actions([Tables\Actions\ViewAction::make()->color('success'), Tables\Actions\EditAction::make()])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
 
@@ -164,6 +180,7 @@ class AlquilerResource extends Resource
             'index' => Pages\ListAlquilers::route('/'),
             'create' => Pages\CreateAlquiler::route('/create'),
             'edit' => Pages\EditAlquiler::route('/{record}/edit'),
+            'view' => Pages\ViewAlquiler::route('/{record}'),
         ];
     }
 }

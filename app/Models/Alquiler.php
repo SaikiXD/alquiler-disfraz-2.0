@@ -39,8 +39,4 @@ class Alquiler extends Model
     {
         return $this->hasMany(AlquilerDisfraz::class);
     }
-    public function piezas(): HasMany
-    {
-        return $this->hasMany(AlquilerPieza::class);
-    }
 }

@@ -25,7 +25,7 @@ class AlquilerService
             $piezas = Pieza::whereIn('id', function ($query) use ($disfrazId) {
                 $query->select('pieza_id')->from('disfraz_pieza')->where('disfraz_id', $disfrazId);
             })
-                ->where('status', 0) // Solo piezas disponibles
+                ->where('status', PiezaStatusEnum::DISPONIBLE) // Solo piezas disponibles
                 ->limit($cantidad)
                 ->get();
 
@@ -34,7 +34,7 @@ class AlquilerService
             }
 
             foreach ($piezas as $pieza) {
-                $pieza->status = 1; // Reservada
+                $pieza->status = PiezaStatusEnum::RESERVADO; // Reservada
                 $pieza->save();
             }
 

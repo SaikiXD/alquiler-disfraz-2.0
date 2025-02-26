@@ -14,7 +14,9 @@ class Disfraz extends Model
     ];
     public function piezas()
     {
-        return $this->belongsToMany(Pieza::class)->withTimestamps()->withPivot('stock', 'color', 'size', 'material');
+        return $this->belongsToMany(Pieza::class)
+            ->withTimestamps()
+            ->withPivot('stock', 'color', 'size', 'material', 'status');
     }
     public function categorias()
     {
@@ -23,8 +25,12 @@ class Disfraz extends Model
     public function alquileres()
     {
         return $this->belongsToMany(Alquiler::class, 'alquiler_disfraz')
-            ->withPivot('precio_unitario')
+            ->withPivot('precio_unitario', 'cantidad')
             ->withTimestamps();
+    }
+    public function disfrazPiezas()
+    {
+        return $this->hasMany(DisfrazPieza::class);
     }
     public static function obtenerPrecio(int $id): ?float
     {

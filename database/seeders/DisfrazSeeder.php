@@ -26,15 +26,30 @@ class DisfrazSeeder extends Seeder
                 'price' => 20.99,
                 'status' => 'disponible',
                 'piezas' => [
-                    ['name' => 'Banda Ninja', 'color' => 'Negro', 'size' => 'M', 'material' => 'Metal', 'stock' => 15],
+                    [
+                        'name' => 'Banda Ninja',
+                        'color' => 'Negro',
+                        'size' => 'M',
+                        'material' => 'Metal',
+                        'stock' => 15,
+                        'status' => 'disponible',
+                    ],
                     [
                         'name' => 'Túnica Naranja',
                         'color' => 'Naranja',
                         'size' => 'L',
                         'material' => 'Tela',
                         'stock' => 10,
+                        'status' => 'disponible',
                     ],
-                    ['name' => 'Shuriken', 'color' => 'Negro', 'size' => 'S', 'material' => 'Plástico', 'stock' => 20],
+                    [
+                        'name' => 'Shuriken',
+                        'color' => 'Negro',
+                        'size' => 'S',
+                        'material' => 'Plástico',
+                        'stock' => 20,
+                        'status' => 'disponible',
+                    ],
                 ],
             ],
             [
@@ -45,13 +60,21 @@ class DisfrazSeeder extends Seeder
                 'price' => 18.5,
                 'status' => 'disponible',
                 'piezas' => [
-                    ['name' => 'Vestido Rosa', 'color' => 'Rosa', 'size' => 'M', 'material' => 'Tela', 'stock' => 12],
+                    [
+                        'name' => 'Vestido Rosa',
+                        'color' => 'Rosa',
+                        'size' => 'M',
+                        'material' => 'Tela',
+                        'stock' => 12,
+                        'status' => 'disponible',
+                    ],
                     [
                         'name' => 'Cinta para el cabello',
                         'color' => 'Rojo',
                         'size' => 'Única',
                         'material' => 'Tela',
                         'stock' => 10,
+                        'status' => 'disponible',
                     ],
                 ],
             ],
@@ -69,8 +92,16 @@ class DisfrazSeeder extends Seeder
                         'size' => 'Única',
                         'material' => 'Plástico',
                         'stock' => 8,
+                        'status' => 'disponible',
                     ],
-                    ['name' => 'Capa', 'color' => 'Negro', 'size' => 'L', 'material' => 'Tela', 'stock' => 5],
+                    [
+                        'name' => 'Capa',
+                        'color' => 'Negro',
+                        'size' => 'L',
+                        'material' => 'Tela',
+                        'stock' => 5,
+                        'status' => 'disponible',
+                    ],
                 ],
             ],
             [
@@ -87,6 +118,7 @@ class DisfrazSeeder extends Seeder
                         'size' => 'Única',
                         'material' => 'Tela',
                         'stock' => 10,
+                        'status' => 'disponible',
                     ],
                     [
                         'name' => 'Guantes de Spiderman',
@@ -94,6 +126,7 @@ class DisfrazSeeder extends Seeder
                         'size' => 'M',
                         'material' => 'Tela',
                         'stock' => 12,
+                        'status' => 'disponible',
                     ],
                 ],
             ],
@@ -111,6 +144,7 @@ class DisfrazSeeder extends Seeder
                         'size' => 'L',
                         'material' => 'Tela',
                         'stock' => 10,
+                        'status' => 'disponible',
                     ],
                     [
                         'name' => 'Gafas Redondas',
@@ -118,6 +152,7 @@ class DisfrazSeeder extends Seeder
                         'size' => 'Única',
                         'material' => 'Plástico',
                         'stock' => 15,
+                        'status' => 'disponible',
                     ],
                     [
                         'name' => 'Varita Mágica',
@@ -125,6 +160,7 @@ class DisfrazSeeder extends Seeder
                         'size' => 'Única',
                         'material' => 'Madera',
                         'stock' => 8,
+                        'status' => 'disponible',
                     ],
                 ],
             ],
@@ -144,7 +180,7 @@ class DisfrazSeeder extends Seeder
                 // Buscar o crear la pieza
                 $pieza = Pieza::firstOrCreate(
                     ['name' => $piezaData['name']],
-                    ['tipo_id' => 1, 'status' => 'disponible'] // `tipo_id` genérico, cámbialo si es necesario
+                    ['tipo_id' => 1] // `tipo_id` genérico, cámbialo si es necesario
                 );
 
                 // Asignar la pieza al disfraz en la tabla pivote disfraz_pieza
@@ -155,6 +191,7 @@ class DisfrazSeeder extends Seeder
                     'color' => $piezaData['color'],
                     'size' => $piezaData['size'],
                     'material' => $piezaData['material'],
+                    'status' => $piezaData['status'],
                 ]);
             }
         }

@@ -1,15 +1,12 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Enums;
-
 use Filament\Support\Contracts\HasLabel;
 use Filament\Support\Contracts\HasColor;
-
-enum PiezaStatusEnum: string implements HasLabel, HasColor
+enum DisfrazPiezaEnum: string implements HasLabel, HasColor
 {
     case DISPONIBLE = 'disponible';
+    case RESERVADO = 'reservado';
     case DAÑADO = 'dañado';
     case PERDIDO = 'perdido';
 
@@ -17,6 +14,7 @@ enum PiezaStatusEnum: string implements HasLabel, HasColor
     {
         return match ($this) {
             self::DISPONIBLE => 'Disponible',
+            self::RESERVADO => 'Reservado',
             self::DAÑADO => 'Dañado',
             self::PERDIDO => 'Perdido',
         };

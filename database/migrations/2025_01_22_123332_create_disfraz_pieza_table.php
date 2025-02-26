@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->string('color');
             $table->string('size');
             $table->string('material');
+            $table->enum('status', ['disponible', 'reservado', 'dañado', 'perdido'])->default('disponible');
             $table->timestamps();
         });
     }

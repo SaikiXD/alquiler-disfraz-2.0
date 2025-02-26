@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('tipo_id')->constrained('tipos')->onDelete('cascade');
             $table->string('name');
-            $table->enum('status', ['disponible', 'dañado', 'perdido'])->default('disponible');
             $table->timestamps();
         });
     }

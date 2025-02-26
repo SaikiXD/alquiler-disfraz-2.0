@@ -8,7 +8,18 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class AlquilerDisfraz extends Pivot
 {
-    protected $fillable = ['alquilerdisfraz_id', 'disfraz_id', 'precio_unitario'];
+    protected $fillable = [
+        'alquilerdisfraz_id',
+        'disfraz_id',
+        'precio_unitario',
+        'cantidad',
+        'piezas_seleccionadas',
+        'piezas_reservadas',
+    ];
+    protected $casts = [
+        'piezas_seleccionadas' => 'array', // Guardará solo IDs
+        'piezas_reservadas' => 'array', // Guardará ID y cantidad de cada pieza
+    ];
     public function alquiler(): BelongsTo
     {
         return $this->belongsTo(Alquiler::class);
@@ -17,9 +28,5 @@ class AlquilerDisfraz extends Pivot
     public function disfraz(): BelongsTo
     {
         return $this->belongsTo(Disfraz::class);
-    }
-    public function piezas()
-    {
-        return $this->hasMany(AlquilerPieza::class, 'alquiler_disfraz_id');
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\DisfrazResource\RelationManagers;
 
+use App\Enums\DisfrazPiezaEnum;
+use App\Models\DisfrazPieza;
 use App\Models\Pieza;
 use App\Models\Tipo;
 use Filament\Forms;
@@ -44,7 +46,34 @@ class PiezasRelationManager extends RelationManager
             ->filters([
                 //
             ])
-            ->headerActions([Tables\Actions\CreateAction::make()])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()->after(function (Pieza $pieza) {
+                    // Crear los tres registros adicionales con estados diferentes
+                    $pieza->load('disfrazs');
+                    foreach ($pieza->disfrazs as $disfraz) {
+                        // Aquí accedes a los atributos del pivote de la relación
+
+                        $piezas = $disfraz->pivot;
+                    }
+                    $estadosAdicionales = [
+                        DisfrazPiezaEnum::RESERVADO->value,
+                        DisfrazPiezaEnum::DAÑADO->value,
+                        DisfrazPiezaEnum::PERDIDO->value,
+                    ];
+
+                    foreach ($estadosAdicionales as $estado) {
+                        DisfrazPieza::create([
+                            'disfraz_id' => $piezas->disfraz_id,
+                            'pieza_id' => $piezas->pieza_id,
+                            'stock' => 0,
+                            'color' => $piezas->color,
+                            'size' => $piezas->size,
+                            'material' => $piezas->material,
+                            'status' => $estado,
+                        ]);
+                    }
+                }),
+            ])
             ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
