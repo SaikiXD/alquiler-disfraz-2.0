@@ -19,6 +19,7 @@ class Alquiler extends Model
         'valor_garantia',
         'fecha_alquiler',
         'fecha_devolucion',
+        'status',
     ];
     protected $casts = [
         'status' => AlquilerStatusEnum::class,

@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\AlquilerStatusEnum;
 use App\Filament\Resources\AlquilerResource\Pages;
 use App\Filament\Resources\AlquilerResource\RelationManagers;
 use App\Models\Alquiler;
+use App\Models\AlquilerDisfrazPieza;
 use App\Models\Disfraz;
 use App\Models\DisfrazPieza;
 use Filament\Forms;
@@ -82,7 +84,7 @@ class AlquilerResource extends Resource
                                     ->toArray()
                             )
                             ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                            ->afterStateUpdated(function ($state, callable $set) {
                                 if (!is_array($state)) {
                                     $state = json_decode($state, true) ?? []; // Convertir JSON string a array si es necesario
                                 }
@@ -100,13 +102,33 @@ class AlquilerResource extends Resource
 
                                     // Guardar como JSON la cantidad que realmente se puede alquilar
                                 }
+                            })
+                            ->afterStateHydrated(function ($state, callable $set, $get) {
+                                if (!is_array($state)) {
+                                    $state = json_decode($state, true) ?? [];
+                                }
+                                if ($state) {
+                                    $stockMinimo = 0;
+                                    $alquilerId = $get('alquiler_id');
+                                    foreach ($state as $piezaId) {
+                                        $stockDisponible = DisfrazPieza::where('pieza_id', $piezaId)
+                                            ->where('status', 'disponible')
+                                            ->sum('stock');
+                                        $stockReservado = AlquilerDisfrazPieza::where('pieza_id', $piezaId)
+                                            ->where('alquiler_disfraz_id', $alquilerId)
+                                            ->sum('cantidad_reservada');
+                                        $stocktotal = $stockDisponible + $stockReservado;
+                                        $stockMinimo = max($stockMinimo, $stocktotal);
+                                    }
+                                    $set('stock_disponible', $stockMinimo);
+                                }
                             }),
 
                         Forms\Components\TextInput::make('cantidad')
                             ->label('Cantidad')
                             ->numeric()
                             ->minValue(1)
-                            ->maxValue(fn($get) => $get('stock_disponible') ?? 0) // Evita alquilar más de lo disponible
+                            ->maxValue(fn($get) => $get('stock_disponible')) // Evita alquilar más de lo disponible
                             ->required()
                             ->default(fn($get) => AlquilerService::obtenerStockMinimoDisfraz($get('disfraz_id'))), // Carga el stock en edición
                         Forms\Components\TextInput::make('precio_unitario')
@@ -141,10 +163,10 @@ class AlquilerResource extends Resource
                         ->required(),
                     Forms\Components\Select::make('status')
                         ->options([
-                            'pendiente' => 'Pendiente',
-                            'alquilado' => 'Alquilar',
+                            AlquilerStatusEnum::PENDIENTE->value => AlquilerStatusEnum::PENDIENTE->getLabel(),
+                            AlquilerStatusEnum::ALQUILADO->value => AlquilerStatusEnum::ALQUILADO->getLabel(),
                         ])
-                        ->default('pendiente')
+                        ->default(AlquilerStatusEnum::PENDIENTE->value)
                         ->required(),
                 ]),
         ]);
@@ -163,7 +185,12 @@ class AlquilerResource extends Resource
             ->filters([
                 //
             ])
-            ->actions([Tables\Actions\ViewAction::make()->color('success'), Tables\Actions\EditAction::make()])
+            ->actions([
+                Tables\Actions\ViewAction::make()->color('success'),
+                Tables\Actions\EditAction::make()->visible(
+                    fn($record) => $record->status->value === AlquilerStatusEnum::PENDIENTE->value
+                ),
+            ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
 

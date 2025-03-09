@@ -20,7 +20,6 @@ class CreateAlquiler extends CreateRecord
         $alquiler = $this->record->load('alquilerDisfrazs'); // Obtener el pedido recién creado
 
         foreach ($alquiler->alquilerDisfrazs as $alquilerDisfraz) {
-            $piezasReservadas = [];
             // Obtener la cantidad de disfraces alquilados
             $cantidadDisfraces = $alquilerDisfraz->cantidad;
             // Obtener las piezas seleccionadas en el CheckboxList
@@ -37,7 +36,6 @@ class CreateAlquiler extends CreateRecord
                     ->first();
                 $stockDisponible = $disfrazPiezadisponible->stock;
                 $cantidadPieza = min($cantidadDisfraces, $stockDisponible);
-                $piezasReservadas[$pieza_id] = $cantidadPieza;
 
                 $stockUpdate = $stockDisponible - $cantidadPieza;
                 $disfrazPiezadisponible->update([
@@ -49,12 +47,10 @@ class CreateAlquiler extends CreateRecord
                 $disfrazPiezaReservado->update([
                     'stock' => $stockUpdate1, // Actualizamos la cantidad
                 ]);
-                $disfrazalquiler = AlquilerDisfraz::where('alquiler_id', $alquilerDisfraz->alquiler_id)
-                    ->where('disfraz_id', $alquilerDisfraz->disfraz_id)
-                    ->first();
-                $disfrazalquiler->update([
-                    //me falta la instancia
-                    'piezas_reservadas' => array_map('strval', array_values($piezasReservadas)),
+                AlquilerDisfrazPieza::create([
+                    'alquiler_disfraz_id' => $alquilerDisfraz->id,
+                    'pieza_id' => $pieza_id,
+                    'cantidad_reservada' => $cantidadPieza,
                 ]);
             }
         }

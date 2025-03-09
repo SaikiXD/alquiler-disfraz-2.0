@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->decimal('valor_garantia', 10, 2);
             $table->dateTime('fecha_alquiler');
             $table->date('fecha_devolucion');
-            $table->enum('status', ['pendiente', 'alquilado', 'finalizado', 'cancelado'])->default('pendiente');
+            $table->enum('status', ['pendiente', 'alquilado', 'finalizado', 'cancelado']);
             $table->timestamps();
         });
     }

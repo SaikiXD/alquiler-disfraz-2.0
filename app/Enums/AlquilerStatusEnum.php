@@ -30,6 +30,7 @@ enum AlquilerStatusEnum: string implements HasLabel, HasColor
     {
         return match ($this) {
             self::PENDIENTE => 'gray',
+            self::ALQUILADO => 'green',
         };
     }
 }
