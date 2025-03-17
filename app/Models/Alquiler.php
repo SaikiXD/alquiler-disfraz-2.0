@@ -40,4 +40,8 @@ class Alquiler extends Model
     {
         return $this->hasMany(AlquilerDisfraz::class);
     }
+    public function devolucion(): HasMany
+    {
+        return $this->hasMany(Devolucion::class);
+    }
 }

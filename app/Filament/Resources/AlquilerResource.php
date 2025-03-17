@@ -190,6 +190,15 @@ class AlquilerResource extends Resource
                 Tables\Actions\EditAction::make()->visible(
                     fn($record) => $record->status->value === AlquilerStatusEnum::PENDIENTE->value
                 ),
+                Tables\Actions\Action::make('devolucion')
+                    ->label('Ir a Devolución')
+                    ->color('primary') // O el color que prefieras
+                    ->icon('heroicon-o-arrow-right') // Icono opcional
+                    ->url(
+                        fn($record) => route('filament.disfraces.resources.devolucions.create', [
+                            'alquiler_id' => $record->id, // Pasar el ID del alquiler a la ruta
+                        ])
+                    ), // Ruta a la página de edición de Devolución
             ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
