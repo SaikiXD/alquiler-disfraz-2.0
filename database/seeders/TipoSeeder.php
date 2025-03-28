@@ -15,22 +15,36 @@ class TipoSeeder extends Seeder
     {
         DB::table('tipos')->insert([
             [
-                'name' => 'Accesorios',
-                'description' => 'Elementos complementarios como máscaras, joyas o cinturones.',
+                'name' => 'ropa',
+                'description' => 'Prenda de vestir usada para disfraces.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Armas',
-                'description' => 'Objetos de utilería como espadas, arcos o pistolas falsas.',
+                'name' => 'accesorio',
+                'description' => 'Complemento del disfraz, como collares o coronas.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Ropa Especial',
-                'description' => 'Vestimenta adicional como capas, guantes o botas.',
+                'name' => 'arma',
+                'description' => 'Armas ficticias como espadas, arcos o pistolas.',
+                'status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'herramienta',
+                'description' => 'Herramientas simuladas como martillos o destornilladores.',
+                'status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'traje completo',
+                'description' => 'Disfraz completo sin piezas separadas.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),

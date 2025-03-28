@@ -5,13 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class AlquilerDisfraz extends Pivot
+class AlquilerDisfraz extends Model
 {
+    protected $table = 'alquiler_disfraz';
     protected $fillable = [
         'alquiler_id',
         'disfraz_id',
+        'modo_alquiler',
         'precio_unitario',
         'cantidad',
         'piezas_seleccionadas',

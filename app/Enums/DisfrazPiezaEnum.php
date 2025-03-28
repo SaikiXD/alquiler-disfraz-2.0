@@ -22,7 +22,10 @@ enum DisfrazPiezaEnum: string implements HasLabel, HasColor
     public function getColor(): string|array|null
     {
         return match ($this) {
-            self::DISPONIBLE => 'gray',
+            self::DISPONIBLE => 'success',
+            self::RESERVADO => 'warning',
+            self::DAÑADO => 'danger',
+            self::PERDIDO => 'neutral',
         };
     }
 }

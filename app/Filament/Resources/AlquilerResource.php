@@ -6,169 +6,303 @@ use App\Enums\AlquilerStatusEnum;
 use App\Filament\Resources\AlquilerResource\Pages;
 use App\Filament\Resources\AlquilerResource\RelationManagers;
 use App\Models\Alquiler;
-use App\Models\AlquilerDisfrazPieza;
+use App\Models\AlquilerDisfraz;
 use App\Models\Disfraz;
 use App\Models\DisfrazPieza;
 use Filament\Forms;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\Section;
-use Illuminate\Support\Facades\DB;
-use App\Services\AlquilerService;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Split;
 
 class AlquilerResource extends Resource
 {
     protected static ?string $model = Alquiler::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-tag';
 
+    public static function getPluralModelLabel(): string
+    {
+        return 'Alquileres';
+    }
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Informacion del cliente')->schema([
-                Forms\Components\Select::make('cliente_id')
-                    ->relationship('cliente', 'name')
-                    ->searchable()
-                    ->createOptionForm([
-                        Forms\Components\TextInput::make('name')->required()->maxLength(255),
-                        Forms\Components\TextInput::make('ci')->required()->numeric(),
-                        Forms\Components\TextInput::make('email')->email()->maxLength(255),
-                        Forms\Components\TextInput::make('address')->required()->maxLength(255),
-                        Forms\Components\TextInput::make('phone')->tel()->required()->numeric(),
-                        Forms\Components\Hidden::make('user_id')
-                            ->default(fn() => \Illuminate\Support\Facades\Auth::user()?->id)
-                            ->required(),
-                    ])
-                    ->required(),
-            ]),
-            Section::make('Informacion de Disfraz')->schema([
-                Repeater::make('alquilerDisfrazs') //este modelo lo cree para usar repeater  con una tabla pivote
-                    ->relationship()
-                    ->schema([
-                        Forms\Components\Select::make('disfraz_id')
-                            ->label('Disfraz')
-                            ->relationship('disfraz', 'name')
-                            ->searchable()
-                            ->reactive()
-                            ->required()
-                            ->afterStateUpdated(function ($state, callable $set) {
-                                if ($state) {
-                                    $set('precio_unitario', Disfraz::obtenerPrecio($state));
-                                } else {
-                                    $set('precio_unitario', 0);
-                                }
-                            }),
-
-                        Forms\Components\CheckboxList::make('piezas_seleccionadas')
-                            ->label('Selecciona las piezas a usar')
-                            ->options(
-                                fn($get) => DisfrazPieza::where('disfraz_id', $get('disfraz_id'))
-                                    ->join('piezas', 'disfraz_pieza.pieza_id', '=', 'piezas.id') // Unir con la tabla de piezas
-                                    ->get(['piezas.id', 'piezas.name', 'disfraz_pieza.stock', 'disfraz_pieza.status']) // Obtener nombre, stock y estado
-                                    ->groupBy('id') // Agrupar por pieza
-                                    ->mapWithKeys(function ($piezas) {
-                                        $pieza = $piezas->first(); // Obtener la primera entrada (ya que están agrupadas)
-                                        $stockDisponible = $piezas->where('status', 'disponible')->sum('stock');
-                                        $stockReservado = $piezas->where('status', 'reservado')->sum('stock');
-                                        return [
-                                            $pieza->id => "{$pieza->name} (Disponible: {$stockDisponible}, Reservado: {$stockReservado})",
-                                        ];
-                                    })
-                                    ->toArray()
-                            )
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set) {
-                                if (!is_array($state)) {
-                                    $state = json_decode($state, true) ?? []; // Convertir JSON string a array si es necesario
-                                }
-                                if ($state) {
-                                    $stockMinimo = PHP_INT_MAX;
-                                    foreach ($state as $piezaId) {
-                                        $stockDisponible = DisfrazPieza::where('pieza_id', $piezaId)
-                                            ->where('status', 'disponible')
-                                            ->sum('stock');
-                                        // Si el stock disponible es menor que la cantidad solicitada, se ajusta
-                                        $stockMaximo = max($stockMinimo, $stockDisponible);
-                                    }
-                                    // Actualizar el máximo permitido en 'cantidad'
-                                    $set('stock_disponible', $stockMaximo);
-
-                                    // Guardar como JSON la cantidad que realmente se puede alquilar
-                                }
-                            })
-                            ->afterStateHydrated(function ($state, callable $set, $get) {
-                                if (!is_array($state)) {
-                                    $state = json_decode($state, true) ?? [];
-                                }
-                                if ($state) {
-                                    $stockMinimo = 0;
-                                    $alquilerId = $get('alquiler_id');
-                                    foreach ($state as $piezaId) {
-                                        $stockDisponible = DisfrazPieza::where('pieza_id', $piezaId)
-                                            ->where('status', 'disponible')
-                                            ->sum('stock');
-                                        $stockReservado = AlquilerDisfrazPieza::where('pieza_id', $piezaId)
-                                            ->where('alquiler_disfraz_id', $alquilerId)
-                                            ->sum('cantidad_reservada');
-                                        $stocktotal = $stockDisponible + $stockReservado;
-                                        $stockMinimo = max($stockMinimo, $stocktotal);
-                                    }
-                                    $set('stock_disponible', $stockMinimo);
-                                }
-                            }),
-
-                        Forms\Components\TextInput::make('cantidad')
-                            ->label('Cantidad')
-                            ->numeric()
-                            ->minValue(1)
-                            ->maxValue(fn($get) => $get('stock_disponible')) // Evita alquilar más de lo disponible
-                            ->required()
-                            ->default(fn($get) => AlquilerService::obtenerStockMinimoDisfraz($get('disfraz_id'))), // Carga el stock en edición
-                        Forms\Components\TextInput::make('precio_unitario')
-                            ->label('Precio Unitario')
-                            ->numeric()
-                            ->minValue(1)
-                            ->required(),
-                    ]),
-            ]),
-            Section::make('Garantia')
-                ->columns(3)
+            Forms\Components\Hidden::make('alquiler_id')
+                ->default(fn() => request()->route('record')?->id)
+                ->dehydrated(false),
+            Section::make('Informacion del cliente')
+                ->icon('heroicon-o-user')
                 ->schema([
-                    Forms\Components\Select::make('tipo_garantia')
-                        ->label('Tipo de Garantía')
-                        ->options([
-                            'dinero' => 'Dinero',
-                            'documento' => 'Documento',
-                            'objeto' => 'Objeto',
+                    Forms\Components\Select::make('cliente_id')
+                        ->relationship('cliente', 'name')
+                        ->searchable()
+                        ->createOptionForm([
+                            Forms\Components\TextInput::make('name')->required()->maxLength(255),
+                            Forms\Components\TextInput::make('ci')->required()->numeric(),
+                            Forms\Components\TextInput::make('email')->email()->maxLength(255),
+                            Forms\Components\TextInput::make('address')->required()->maxLength(255),
+                            Forms\Components\TextInput::make('phone')->tel()->required()->numeric(),
+                            Forms\Components\Hidden::make('user_id')
+                                ->default(fn() => \Illuminate\Support\Facades\Auth::user()?->id)
+                                ->required(),
                         ])
-                        ->required(),
-                    Forms\Components\TextInput::make('valor_garantia')
-                        ->label('Valor de Garantía')
-                        ->numeric()
-                        ->required(),
-                    Forms\Components\DatePicker::make('fecha_alquiler')
-                        ->label('Fecha de Alquiler')
-                        ->native(false)
-                        ->required(),
-                    Forms\Components\DatePicker::make('fecha_devolucion')
-                        ->label('Fecha de Devolución')
-                        ->native(false)
-                        ->required(),
-                    Forms\Components\Select::make('status')
-                        ->options([
-                            AlquilerStatusEnum::PENDIENTE->value => AlquilerStatusEnum::PENDIENTE->getLabel(),
-                            AlquilerStatusEnum::ALQUILADO->value => AlquilerStatusEnum::ALQUILADO->getLabel(),
-                        ])
-                        ->default(AlquilerStatusEnum::PENDIENTE->value)
                         ->required(),
                 ]),
+            Section::make('Informacion de Disfraz')
+                ->icon('heroicon-o-tag')
+                ->schema([
+                    Repeater::make('alquilerDisfrazs') //este modelo lo cree para usar repeater  con una tabla pivote
+                        ->relationship()
+                        ->label(false)
+                        ->addActionLabel('Añadir disfraz al pedido')
+                        ->collapsed()
+                        ->defaultItems(0)
+                        ->schema([
+                            Forms\Components\Grid::make(2)->schema([
+                                Forms\Components\Radio::make('modo_alquiler')
+                                    ->label('Modo de alquiler del Disfraz')
+                                    ->options([
+                                        'completo' => 'Todo el conjunto',
+                                        'por_pieza' => 'Elegir piezas',
+                                    ])
+                                    ->default('completo')
+                                    ->inline()
+                                    ->inlineLabel(false)
+                                    ->reactive()
+                                    ->required()
+                                    ->afterStateUpdated(function (callable $set) {
+                                        $set('disfraz_id', null); // 🔁 Limpia la selección anterior
+                                        $set('piezas_completas', []);
+                                        $set('piezas_seleccionadas', []);
+                                        $set('precio_unitario', 0);
+                                        $set('cantidad', null);
+                                    }),
+                                Forms\Components\Select::make('disfraz_id')
+                                    ->label('Disfraz')
+                                    ->relationship(
+                                        name: 'disfraz',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: function ($query, $get) {
+                                            $modoAlquiler = $get('modo_alquiler');
+                                            $query->with([
+                                                'disfrazPiezas' => function ($q) {
+                                                    $q->where('status', 'reservado');
+                                                },
+                                            ]);
+                                            if ($modoAlquiler === 'completo') {
+                                                $query->where('status', 'disponible');
+                                            } elseif ($modoAlquiler === 'por_pieza') {
+                                                $query->whereIn('status', ['disponible', 'incompleto']);
+                                            }
+                                        }
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->reactive()
+                                    ->getOptionLabelFromRecordUsing(function ($record) {
+                                        $alquilerId = request()->route('record');
+                                        $stockDisponible = $record->stock_disponible;
+                                        $reservado = AlquilerDisfraz::where('disfraz_id', $record->id)
+                                            ->where('alquiler_id', $alquilerId)
+                                            ->value('cantidad');
+                                        if ($reservado) {
+                                            $stockDisponible = $stockDisponible + $reservado;
+                                        }
+                                        return "{$record->name} (Stock Disponible: {$stockDisponible})";
+                                    })
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->required()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        if (!$state) {
+                                            $set('precio_unitario', 0);
+                                            $set('piezas_completas', []);
+                                            return;
+                                        }
+                                        $set('precio_unitario', Disfraz::obtenerPrecio($state));
+                                        if ($get('modo_alquiler') === 'completo') {
+                                            $piezas = DisfrazPieza::where('disfraz_id', $state)
+                                                ->with('pieza')
+                                                ->where('status', 'disponible')
+                                                ->get();
+
+                                            $set(
+                                                'piezas_completas',
+                                                $piezas->pluck('pieza.name')->filter()->values()->toArray()
+                                            );
+                                        }
+                                    })
+                                    ->afterStateHydrated(function ($state, callable $set, callable $get) {
+                                        if ($get('modo_alquiler') === 'completo') {
+                                            $piezas = DisfrazPieza::where('disfraz_id', $state)
+                                                ->with('pieza')
+                                                ->where('status', 'disponible')
+                                                ->get();
+                                            $set(
+                                                'piezas_completas',
+                                                $piezas->pluck('pieza.name')->filter()->values()->toArray()
+                                            );
+                                        }
+                                    }),
+                                Forms\Components\TagsInput::make('piezas_completas')
+                                    ->label(false)
+                                    ->placeholder('Piezas Incluidas')
+                                    ->visible(fn($get) => $get('modo_alquiler') === 'completo')
+                                    ->disabled()
+                                    ->columnSpanFull(),
+                                Forms\Components\CheckboxList::make('piezas_seleccionadas')
+                                    ->label('Selecciona las piezas a usar')
+                                    ->columns(2) // o 3 si tenés muchas piezas
+                                    ->visible(fn($get) => $get('modo_alquiler') === 'por_pieza')
+                                    ->options(
+                                        fn($get) => $get('disfraz_id')
+                                            ? DisfrazPieza::with('pieza')
+                                                ->where('disfraz_id', $get('disfraz_id'))
+                                                ->whereIn('status', ['disponible', 'reservado'])
+                                                ->get()
+                                                ->groupBy('pieza_id')
+                                                ->mapWithKeys(function ($items, $piezaId) {
+                                                    $pieza = $items->first()->pieza;
+                                                    $filaDisponible = $items->firstWhere('status', 'disponible');
+                                                    $filaReservado = $items->firstWhere('status', 'reservado');
+                                                    $stockDisponible = $filaDisponible?->stock ?? 0;
+                                                    $stockReservado = $filaReservado?->stock ?? 0;
+                                                    return [
+                                                        $piezaId => "{$pieza->name} (Disponible: {$stockDisponible}, Reservado: {$stockReservado})",
+                                                    ];
+                                                })
+                                                ->toArray()
+                                            : []
+                                    )
+                                    ->columnSpanFull()
+                                    ->reactive(),
+                            ]),
+                            Forms\Components\Grid::make(2)->schema([
+                                Forms\Components\TextInput::make('cantidad')
+                                    ->label('Cantidad')
+                                    ->numeric()
+                                    ->reactive()
+                                    ->minValue(1)
+                                    ->default(0)
+                                    ->maxValue(
+                                        fn($get) => match ($get('modo_alquiler')) {
+                                            'por_pieza' => DisfrazPieza::whereIn(
+                                                'pieza_id',
+                                                $get('piezas_seleccionadas') ?? []
+                                            )
+                                                ->whereIn('status', ['disponible', 'reservado'])
+                                                ->get()
+                                                ->groupBy('pieza_id')
+                                                ->map(fn($piezas) => $piezas->sum('stock'))
+                                                ->max() ?? 0,
+
+                                            'completo' => DisfrazPieza::where('disfraz_id', $get('disfraz_id'))
+                                                ->whereIn('status', ['disponible', 'reservado'])
+                                                ->get()
+                                                ->groupBy('pieza_id')
+                                                ->map(fn($items) => $items->sum('stock'))
+                                                ->min() ?? 0,
+                                        }
+                                    )
+                                    ->disabled(fn($get) => !$get('disfraz_id'))
+                                    ->lazy()
+                                    ->afterStateUpdated(function (callable $get, callable $set) {
+                                        $set('total', self::calcularTotal($get));
+                                    })
+                                    ->required(),
+                                Forms\Components\TextInput::make('precio_unitario')
+                                    ->label('Precio Unitario')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->minValue(1)
+                                    ->disabled(fn($get) => !$get('disfraz_id'))
+                                    ->reactive()
+                                    ->lazy()
+                                    ->afterStateUpdated(function (callable $get, callable $set) {
+                                        $set('total', self::calcularTotal($get));
+                                    })
+                                    ->required(),
+                            ]),
+                        ])
+                        ->afterStateUpdated(function (callable $get, callable $set, $state) {
+                            if (is_array($state)) {
+                                $set('total', self::calcularTotal($get));
+                            }
+                        })
+                        ->itemLabel(fn(array $state) => Disfraz::find($state['disfraz_id'])?->name ?? 'Nuevo disfraz'),
+                ]),
+            Split::make([
+                Section::make('Informacion de la Garantia')
+                    ->icon('heroicon-o-lock-closed')
+                    ->schema([
+                        Grid::make(2)->schema([
+                            Forms\Components\Select::make('tipo_garantia')
+                                ->label('Tipo de Garantía')
+                                ->options([
+                                    'dinero' => 'Dinero',
+                                    'documento' => 'Documento',
+                                    'objeto' => 'Objeto',
+                                ])
+                                ->required(),
+                            Forms\Components\TextInput::make('valor_garantia')
+                                ->label('Valor de Garantía')
+                                ->numeric()
+                                ->required(),
+                        ]),
+                        Forms\Components\FileUpload::make('image_path_garantia')
+                            ->label('Imagen de Referencia')
+                            ->image()
+                            ->imageEditor()
+                            ->maxSize(1024)
+                            ->required(),
+                        Forms\Components\Textarea::make('description')->label('Descripcion'),
+                    ])
+                    ->grow(2),
+                Section::make('Detalles del Alquiler')
+                    ->icon('heroicon-o-calendar')
+                    ->schema([
+                        Grid::make(2)->schema([
+                            Forms\Components\DatePicker::make('fecha_alquiler')
+                                ->label('Fecha de Alquiler')
+                                ->default(now())
+
+                                ->required(),
+                            Forms\Components\DatePicker::make('fecha_devolucion')
+                                ->label('Fecha de Devolución')
+                                ->afterOrEqual('fecha_alquiler')
+                                ->required(),
+                        ]),
+                        Forms\Components\TextInput::make('total')
+                            ->label('Total')
+                            ->prefix('Bs')
+                            ->disabled()
+                            ->numeric()
+                            ->afterStateHydrated(function (callable $get, callable $set) {
+                                $set('total', self::calcularTotal($get));
+                            })
+                            ->dehydrated(false)
+                            ->default(0),
+                        Radio::make('status')
+                            ->label('Estado')
+                            ->options([
+                                AlquilerStatusEnum::PENDIENTE->value => 'Pendiente',
+                                AlquilerStatusEnum::ALQUILADO->value => 'Alquilado',
+                            ])
+                            ->default(AlquilerStatusEnum::PENDIENTE->value)
+                            ->inline()
+                            ->inlineLabel(false)
+                            ->required(),
+                    ])
+                    ->grow(1),
+            ])
+                ->columnSpan('full')
+                ->from('md'),
         ]);
     }
 
@@ -179,7 +313,12 @@ class AlquilerResource extends Resource
                 Tables\Columns\TextColumn::make('cliente.name'),
                 Tables\Columns\TextColumn::make('fecha_alquiler'),
                 Tables\Columns\TextColumn::make('fecha_devolucion'),
-                Tables\Columns\TextColumn::make('status')->badge()->searchable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Estado')
+                    ->badge()
+                    ->formatStateUsing(
+                        fn($state) => $state instanceof AlquilerStatusEnum ? $state->name : (string) $state
+                    ),
             ])
 
             ->filters([
@@ -187,9 +326,26 @@ class AlquilerResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()->color('success'),
-                Tables\Actions\EditAction::make()->visible(
-                    fn($record) => $record->status->value === AlquilerStatusEnum::PENDIENTE->value
-                ),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn($record) => $record->status->value === AlquilerStatusEnum::PENDIENTE->value)
+                    ->slideOver(),
+                Tables\Actions\Action::make('marcarComoAlquilado')
+                    ->label('Alquilar')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Confirmar cambio de estado')
+                    ->visible(fn($record) => $record->status->value === AlquilerStatusEnum::PENDIENTE->value)
+                    ->action(function ($record) {
+                        $record->update([
+                            'status' => AlquilerStatusEnum::ALQUILADO->value,
+                        ]);
+                        Notification::make()
+                            ->title('Estado actualizado')
+                            ->body('El estado se cambió a ALQUILADO correctamente.')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('devolucion')
                     ->label('Ir a Devolución')
                     ->color('primary') // O el color que prefieras
@@ -198,7 +354,8 @@ class AlquilerResource extends Resource
                         fn($record) => route('filament.disfraces.resources.devolucions.create', [
                             'alquiler_id' => $record->id, // Pasar el ID del alquiler a la ruta
                         ])
-                    ), // Ruta a la página de edición de Devolución
+                    ) // Ruta a la página de edición de Devolución
+                    ->visible(fn($record) => $record->status->value === AlquilerStatusEnum::ALQUILADO->value),
             ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
@@ -218,5 +375,18 @@ class AlquilerResource extends Resource
             'edit' => Pages\EditAlquiler::route('/{record}/edit'),
             'view' => Pages\ViewAlquiler::route('/{record}'),
         ];
+    }
+    protected static function calcularTotal(callable $get): float
+    {
+        $disfraces = $get('alquilerDisfrazs') ?? [];
+
+        $total = 0;
+        foreach ($disfraces as $item) {
+            $cantidad = is_numeric($item['cantidad'] ?? null) ? (float) $item['cantidad'] : 0;
+            $precio = is_numeric($item['precio_unitario'] ?? null) ? (float) $item['precio_unitario'] : 0;
+            $total += $cantidad * $precio;
+        }
+
+        return $total;
     }
 }

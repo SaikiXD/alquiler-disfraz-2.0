@@ -24,7 +24,9 @@ enum DisfrazStatusEnum: string implements HasLabel, HasColor
     public function getColor(): string|array|null
     {
         return match ($this) {
-            self::DISPONIBLE => 'gray',
+            self::DISPONIBLE => 'success',
+            self::INCOMPLETO => 'primary',
+            self::NO_DISPONIBLE => 'danger',
         };
     }
 }

@@ -15,7 +15,6 @@ return new class extends Migration {
             $table->foreignId('alquiler_id')->constrained('alquilers')->onDelete('cascade'); // Relación con alquileres
             $table->datetime('fecha_devolucion_real'); // Fecha en la que se realizó la devolución
             $table->decimal('multa', 10, 2)->default(0); // Monto de la multa por retraso
-            $table->enum('estado', ['completa', 'parcial']); // Indica si la devolución fue total o parcial
             $table->timestamps();
         });
     }

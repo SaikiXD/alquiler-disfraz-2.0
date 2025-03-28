@@ -12,10 +12,10 @@ return new class extends Migration {
     {
         Schema::create('devolucion_disfraz_pieza', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('devolucion_id')->constrained('devoluciones')->onDelete('cascade'); // Relación con devoluciones
-            $table->foreignId('disfraz_pieza_id')->constrained('disfraz_pieza')->onDelete('cascade'); // Relación con disfraz_pieza
-            $table->integer('cantidad_devuelta'); // Cantidad de unidades devueltas
-            $table->enum('estado_pieza', ['disponible', 'dañado', 'perdido']); // Estado en el que regresa la pieza
+            $table->foreignId('devolucion_id')->constrained('devolucions')->onDelete('cascade'); // Relación con devoluciones
+            $table->foreignId('alquiler_disfraz_pieza_id')->constrained('alquiler_disfraz_pieza')->onDelete('cascade'); // Relación con disfraz_pieza
+            $table->integer('cantidad'); // Cantidad de unidades devueltas
+            $table->enum('estado_pieza', ['bueno', 'dañado', 'perdido']); // Estado en el que regresa la pieza
             $table->timestamps();
         });
     }

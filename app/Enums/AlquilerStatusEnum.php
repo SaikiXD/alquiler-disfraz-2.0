@@ -29,8 +29,10 @@ enum AlquilerStatusEnum: string implements HasLabel, HasColor
     public function getColor(): string|array|null
     {
         return match ($this) {
-            self::PENDIENTE => 'gray',
-            self::ALQUILADO => 'green',
+            self::PENDIENTE => 'info',
+            self::ALQUILADO => 'success',
+            self::FINALIZADO => 'secondary',
+            self::CANCELADO => 'danger',
         };
     }
 }

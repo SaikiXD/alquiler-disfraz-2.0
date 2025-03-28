@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
             CategoriaSeeder::class,
             TipoSeeder::class,
             DisfrazSeeder::class,
+            PiezaSeeder::class,
+            DisfrazPiezaSeeder::class,
+            CategoriaDisfrazSeeder::class,
         ]);
     }
 }

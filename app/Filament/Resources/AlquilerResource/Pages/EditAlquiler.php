@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\AlquilerResource\Pages;
 
+use App\Enums\DisfrazStatusEnum;
 use App\Filament\Resources\AlquilerResource;
 use App\Models\AlquilerDisfrazPieza;
+use App\Models\Disfraz;
 use App\Models\DisfrazPieza;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -21,6 +23,7 @@ class EditAlquiler extends EditRecord
         $alquiler = $this->record->load('alquilerDisfrazs');
         foreach ($alquiler->alquilerDisfrazs as $alquilerDisfraz) {
             $cantidadNueva = $alquilerDisfraz->cantidad;
+            $disfraz = Disfraz::find($alquilerDisfraz->disfraz_id);
             $piezasSeleccionadas = $alquilerDisfraz->piezas_seleccionadas;
             $piezasAntiguas = AlquilerDisfrazPieza::where('alquiler_disfraz_id', $alquilerDisfraz->id)
                 ->pluck('pieza_id')
@@ -114,6 +117,22 @@ class EditAlquiler extends EditRecord
                         'cantidad_reservada' => $nuevoStock,
                     ]);
                 }
+            }
+            //aqui cambio el estado del disfraz
+            $piezasConStock = $disfraz->disfrazPiezas()->where('stock', '>', 0)->where('status', 'disponible')->count();
+            $totalPiezas = $disfraz->disfrazPiezas()->where('status', 'disponible')->count();
+            if ($piezasConStock === 0) {
+                $disfraz->update([
+                    'status' => DisfrazStatusEnum::NO_DISPONIBLE->value,
+                ]);
+            } elseif ($totalPiezas > $piezasConStock) {
+                $disfraz->update([
+                    'status' => DisfrazStatusEnum::INCOMPLETO->value,
+                ]);
+            } else {
+                $disfraz->update([
+                    'status' => DisfrazStatusEnum::DISPONIBLE->value,
+                ]);
             }
         }
     }

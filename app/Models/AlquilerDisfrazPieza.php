@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AlquilerDisfrazPieza extends Model
 {
@@ -17,5 +18,9 @@ class AlquilerDisfrazPieza extends Model
     public function pieza(): BelongsTo
     {
         return $this->belongsTo(Pieza::class);
+    }
+    public function devolucionPiezas(): HasMany
+    {
+        return $this->hasMany(DevolucionDisfrazPieza::class);
     }
 }

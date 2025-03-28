@@ -15,63 +15,71 @@ class CategoriaSeeder extends Seeder
     {
         DB::table('categorias')->insert([
             [
-                'name' => 'Fantasía',
-                'description' =>
-                    'Categoría que incluye disfraces relacionados con elementos fantásticos como hadas, magos, y criaturas mitológicas.',
+                'name' => 'Folklore Boliviano',
+                'description' => 'Disfraces típicos de danzas y culturas bolivianas.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Históricos',
-                'description' =>
-                    'Disfraces basados en personajes y estilos de épocas pasadas, como guerreros romanos o piratas.',
-                'status' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Profesiones',
-                'description' =>
-                    'Incluye disfraces representativos de diferentes profesiones, como médicos, policías o bomberos.',
+                'name' => 'Anime y Manga',
+                'description' => 'Cosplays de personajes de anime y manga japonés.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
                 'name' => 'Superhéroes',
-                'description' => 'Disfraces inspirados en personajes de cómics, películas y series de superhéroes.',
+                'description' => 'Trajes de personajes heroicos del cine y cómics.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Terror',
-                'description' =>
-                    'Categoría de disfraces relacionados con personajes y temáticas de terror, como zombis, vampiros y brujas.',
+                'name' => 'Cuerpo Completo',
+                'description' => 'Disfraces que se alquilan como una unidad indivisible.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Animales',
-                'description' => 'Disfraces inspirados en animales de todo tipo, ideales para niños y adultos.',
+                'name' => 'Ciencia Ficción',
+                'description' => 'Disfraces inspirados en mundos futuristas o tecnológicos.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Cultura Pop',
-                'description' =>
-                    'Disfraces de personajes y elementos icónicos de la cultura pop, como series, películas y videojuegos.',
+                'name' => 'Villanos',
+                'description' => 'Disfraces de antagonistas populares de ficción.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Infantiles',
-                'description' =>
-                    'Disfraces diseñados especialmente para niños pequeños con temas divertidos y coloridos.',
+                'name' => 'Halloween',
+                'description' => 'Disfraces usados tradicionalmente en fiestas de disfraces o terror.',
+                'status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Danza',
+                'description' => 'Disfraces asociados a bailes y expresiones culturales.',
+                'status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Niños y niñas',
+                'description' => 'Disfraces enfocados en público infantil.',
+                'status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Época y Fantasía',
+                'description' => 'Trajes inspirados en periodos históricos o mundos imaginarios.',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),

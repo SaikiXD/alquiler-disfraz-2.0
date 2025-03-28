@@ -2,198 +2,63 @@
 
 namespace Database\Seeders;
 
-use App\Models\Disfraz;
-use App\Models\DisfrazPieza;
-use App\Models\Pieza;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Disfraz;
+use App\Models\Pieza;
+use App\Models\DisfrazPieza;
 use Illuminate\Support\Facades\DB;
 
 class DisfrazSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function run()
     {
-        // Lista de disfraces con sus respectivas piezas
-        $disfraces = [
+        DB::table('disfrazs')->insert([
             [
-                'name' => 'Naruto',
-                'description' => 'Disfraz del personaje Naruto Uzumaki',
-                'gender' => 'masculino',
-                'image_path' => 'images/naruto.jpg',
-                'price' => 20.99,
+                'name' => 'Tinku',
+                'description' =>
+                    'Traje tradicional guerrero de la cultura andina, usado en rituales y danzas de combate.',
+                'image_path' => 'tinku.jpg',
+                'price' => 130.0,
                 'status' => 'disponible',
-                'piezas' => [
-                    [
-                        'name' => 'Banda Ninja',
-                        'color' => 'Negro',
-                        'size' => 'M',
-                        'material' => 'Metal',
-                        'stock' => 15,
-                        'status' => 'disponible',
-                    ],
-                    [
-                        'name' => 'Túnica Naranja',
-                        'color' => 'Naranja',
-                        'size' => 'L',
-                        'material' => 'Tela',
-                        'stock' => 10,
-                        'status' => 'disponible',
-                    ],
-                    [
-                        'name' => 'Shuriken',
-                        'color' => 'Negro',
-                        'size' => 'S',
-                        'material' => 'Plástico',
-                        'stock' => 20,
-                        'status' => 'disponible',
-                    ],
-                ],
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
-                'name' => 'Sakura',
-                'description' => 'Disfraz de Sakura Haruno',
-                'gender' => 'femenino',
-                'image_path' => 'images/sakura.jpg',
-                'price' => 18.5,
+                'name' => 'Caporal',
+                'description' => 'Disfraz típico de la danza Caporales, con bordados brillantes y botas altas.',
+                'image_path' => 'caporal.jpg',
+                'price' => 150.0,
                 'status' => 'disponible',
-                'piezas' => [
-                    [
-                        'name' => 'Vestido Rosa',
-                        'color' => 'Rosa',
-                        'size' => 'M',
-                        'material' => 'Tela',
-                        'stock' => 12,
-                        'status' => 'disponible',
-                    ],
-                    [
-                        'name' => 'Cinta para el cabello',
-                        'color' => 'Rojo',
-                        'size' => 'Única',
-                        'material' => 'Tela',
-                        'stock' => 10,
-                        'status' => 'disponible',
-                    ],
-                ],
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
-                'name' => 'Batman',
-                'description' => 'Disfraz del superhéroe Batman',
-                'gender' => 'masculino',
-                'image_path' => 'images/batman.jpg',
-                'price' => 30.0,
+                'name' => 'Sailor Moon',
+                'description' => 'Traje de la heroína mágica del anime clásico. Ideal para cosplay y eventos otaku.',
+                'image_path' => 'sailor-moon.jpg',
+                'price' => 170.0,
                 'status' => 'disponible',
-                'piezas' => [
-                    [
-                        'name' => 'Máscara de Batman',
-                        'color' => 'Negro',
-                        'size' => 'Única',
-                        'material' => 'Plástico',
-                        'stock' => 8,
-                        'status' => 'disponible',
-                    ],
-                    [
-                        'name' => 'Capa',
-                        'color' => 'Negro',
-                        'size' => 'L',
-                        'material' => 'Tela',
-                        'stock' => 5,
-                        'status' => 'disponible',
-                    ],
-                ],
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
-                'name' => 'Spiderman',
-                'description' => 'Disfraz de Spiderman clásico',
-                'gender' => 'masculino',
-                'image_path' => 'images/spiderman.jpg',
-                'price' => 25.0,
+                'name' => 'Kirito (SAO)',
+                'description' => 'Disfraz del espadachín negro de Sword Art Online. Con abrigo largo y accesorios.',
+                'image_path' => 'kirito.jpg',
+                'price' => 180.0,
                 'status' => 'disponible',
-                'piezas' => [
-                    [
-                        'name' => 'Máscara de Spiderman',
-                        'color' => 'Rojo',
-                        'size' => 'Única',
-                        'material' => 'Tela',
-                        'stock' => 10,
-                        'status' => 'disponible',
-                    ],
-                    [
-                        'name' => 'Guantes de Spiderman',
-                        'color' => 'Rojo',
-                        'size' => 'M',
-                        'material' => 'Tela',
-                        'stock' => 12,
-                        'status' => 'disponible',
-                    ],
-                ],
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             [
-                'name' => 'Harry Potter',
-                'description' => 'Disfraz de estudiante de Hogwarts',
-                'gender' => 'unisex',
-                'image_path' => 'images/harry_potter.jpg',
-                'price' => 22.5,
+                'name' => 'Spider-Man',
+                'description' => 'Icónico traje del superhéroe arácnido, ideal para niños y adultos.',
+                'image_path' => 'spiderman.jpg',
+                'price' => 160.0,
                 'status' => 'disponible',
-                'piezas' => [
-                    [
-                        'name' => 'Capa de Hogwarts',
-                        'color' => 'Negro',
-                        'size' => 'L',
-                        'material' => 'Tela',
-                        'stock' => 10,
-                        'status' => 'disponible',
-                    ],
-                    [
-                        'name' => 'Gafas Redondas',
-                        'color' => 'Negro',
-                        'size' => 'Única',
-                        'material' => 'Plástico',
-                        'stock' => 15,
-                        'status' => 'disponible',
-                    ],
-                    [
-                        'name' => 'Varita Mágica',
-                        'color' => 'Madera',
-                        'size' => 'Única',
-                        'material' => 'Madera',
-                        'stock' => 8,
-                        'status' => 'disponible',
-                    ],
-                ],
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
-        ];
-        foreach ($disfraces as $data) {
-            // Crear el disfraz
-            $disfraz = Disfraz::create([
-                'name' => $data['name'],
-                'description' => $data['description'],
-                'gender' => $data['gender'],
-                'image_path' => $data['image_path'],
-                'price' => $data['price'],
-                'status' => $data['status'],
-            ]);
-
-            foreach ($data['piezas'] as $piezaData) {
-                // Buscar o crear la pieza
-                $pieza = Pieza::firstOrCreate(
-                    ['name' => $piezaData['name']],
-                    ['tipo_id' => 1] // `tipo_id` genérico, cámbialo si es necesario
-                );
-
-                // Asignar la pieza al disfraz en la tabla pivote disfraz_pieza
-                DisfrazPieza::create([
-                    'disfraz_id' => $disfraz->id,
-                    'pieza_id' => $pieza->id,
-                    'stock' => $piezaData['stock'],
-                    'color' => $piezaData['color'],
-                    'size' => $piezaData['size'],
-                    'material' => $piezaData['material'],
-                    'status' => $piezaData['status'],
-                ]);
-            }
-        }
+        ]);
     }
 }
