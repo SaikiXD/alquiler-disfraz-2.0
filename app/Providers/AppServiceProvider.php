@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\AlquilerDisfraz;
+use App\Observers\AlquilerDisfrazObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

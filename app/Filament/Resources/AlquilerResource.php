@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Split;
 
@@ -31,12 +32,11 @@ class AlquilerResource extends Resource
     {
         return 'Alquileres';
     }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Hidden::make('alquiler_id')
-                ->default(fn() => request()->route('record')?->id)
-                ->dehydrated(false),
+            Hidden::make('alquiler_id')->default(fn() => request()->route('record')?->id),
             Section::make('Informacion del cliente')
                 ->icon('heroicon-o-user')
                 ->schema([
@@ -65,6 +65,7 @@ class AlquilerResource extends Resource
                         ->collapsed()
                         ->defaultItems(0)
                         ->schema([
+                            Hidden::make('id'), // Esto es importante para que $get('../../id') funcione
                             Forms\Components\Grid::make(2)->schema([
                                 Forms\Components\Radio::make('modo_alquiler')
                                     ->label('Modo de alquiler del Disfraz')
@@ -77,6 +78,7 @@ class AlquilerResource extends Resource
                                     ->inlineLabel(false)
                                     ->reactive()
                                     ->required()
+                                    ->disabled(fn($get) => filled($get('id')))
                                     ->afterStateUpdated(function (callable $set) {
                                         $set('disfraz_id', null); // 🔁 Limpia la selección anterior
                                         $set('piezas_completas', []);
@@ -89,15 +91,11 @@ class AlquilerResource extends Resource
                                     ->relationship(
                                         name: 'disfraz',
                                         titleAttribute: 'name',
-                                        modifyQueryUsing: function ($query, $get) {
+                                        modifyQueryUsing: function ($query, $get, $state) {
                                             $modoAlquiler = $get('modo_alquiler');
-                                            $query->with([
-                                                'disfrazPiezas' => function ($q) {
-                                                    $q->where('status', 'reservado');
-                                                },
-                                            ]);
+                                            $alquilerId = request()->route('record');
                                             if ($modoAlquiler === 'completo') {
-                                                $query->where('status', 'disponible');
+                                                $query->whereIn('status', ['disponible', 'reservado']);
                                             } elseif ($modoAlquiler === 'por_pieza') {
                                                 $query->whereIn('status', ['disponible', 'incompleto']);
                                             }
@@ -105,16 +103,16 @@ class AlquilerResource extends Resource
                                     )
                                     ->searchable()
                                     ->preload()
+                                    ->disabled(fn($get) => filled($get('id')))
                                     ->reactive()
+                                    //->disabled(fn() => request()->route('record') !== null)
                                     ->getOptionLabelFromRecordUsing(function ($record) {
                                         $alquilerId = request()->route('record');
                                         $stockDisponible = $record->stock_disponible;
-                                        $reservado = AlquilerDisfraz::where('disfraz_id', $record->id)
-                                            ->where('alquiler_id', $alquilerId)
-                                            ->value('cantidad');
-                                        if ($reservado) {
-                                            $stockDisponible = $stockDisponible + $reservado;
-                                        }
+                                        $reservado = AlquilerDisfraz::obtenercantidad($record->id) ?? 0;
+
+                                        $stockDisponible += $reservado;
+
                                         return "{$record->name} (Stock Disponible: {$stockDisponible})";
                                     })
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -159,6 +157,7 @@ class AlquilerResource extends Resource
                                 Forms\Components\CheckboxList::make('piezas_seleccionadas')
                                     ->label('Selecciona las piezas a usar')
                                     ->columns(2) // o 3 si tenés muchas piezas
+                                    ->disabled(fn($get) => filled($get('id')))
                                     ->visible(fn($get) => $get('modo_alquiler') === 'por_pieza')
                                     ->options(
                                         fn($get) => $get('disfraz_id')
@@ -190,6 +189,7 @@ class AlquilerResource extends Resource
                                     ->reactive()
                                     ->minValue(1)
                                     ->default(0)
+                                    ->disabled(fn($get) => filled($get('id')))
                                     ->maxValue(
                                         fn($get) => match ($get('modo_alquiler')) {
                                             'por_pieza' => DisfrazPieza::whereIn(
@@ -210,7 +210,7 @@ class AlquilerResource extends Resource
                                                 ->min() ?? 0,
                                         }
                                     )
-                                    ->disabled(fn($get) => !$get('disfraz_id'))
+
                                     ->lazy()
                                     ->afterStateUpdated(function (callable $get, callable $set) {
                                         $set('total', self::calcularTotal($get));
@@ -220,8 +220,8 @@ class AlquilerResource extends Resource
                                     ->label('Precio Unitario')
                                     ->numeric()
                                     ->default(0)
+                                    ->disabled(fn($get) => filled($get('id')))
                                     ->minValue(1)
-                                    ->disabled(fn($get) => !$get('disfraz_id'))
                                     ->reactive()
                                     ->lazy()
                                     ->afterStateUpdated(function (callable $get, callable $set) {
@@ -259,8 +259,7 @@ class AlquilerResource extends Resource
                             ->label('Imagen de Referencia')
                             ->image()
                             ->imageEditor()
-                            ->maxSize(1024)
-                            ->required(),
+                            ->maxSize(1024),
                         Forms\Components\Textarea::make('description')->label('Descripcion'),
                     ])
                     ->grow(2),
@@ -311,8 +310,8 @@ class AlquilerResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('cliente.name'),
-                Tables\Columns\TextColumn::make('fecha_alquiler'),
-                Tables\Columns\TextColumn::make('fecha_devolucion'),
+                Tables\Columns\TextColumn::make('fecha_alquiler')->date(),
+                Tables\Columns\TextColumn::make('fecha_devolucion')->date(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()

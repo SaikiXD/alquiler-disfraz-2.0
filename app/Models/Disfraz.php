@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DisfrazPiezaEnum;
 use App\Enums\DisfrazStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,13 +15,6 @@ class Disfraz extends Model
     protected $casts = [
         'status' => DisfrazStatusEnum::class,
     ];
-    /*
-    public function piezas()
-    {
-        return $this->belongsToMany(Pieza::class)
-            ->withTimestamps()
-            ->withPivot('stock', 'color', 'size', 'material', 'status');
-    }*/
     public function categorias()
     {
         return $this->belongsToMany(Categoria::class)->withTimestamps();
@@ -45,7 +39,27 @@ class Disfraz extends Model
         if ($piezasDisponibles->isEmpty()) {
             return 0;
         }
+        if ($this->status === DisfrazStatusEnum::DISPONIBLE) {
+            return $piezasDisponibles->min('stock');
+        }
+        return $piezasDisponibles->max('stock');
         // Devuelve el stock mínimo entre todas las piezas disponibles
-        return $piezasDisponibles->min('stock');
+    }
+    public function actualizarEstado()
+    {
+        $totalPiezas = $this->disfrazPiezas()->where('status', DisfrazPiezaEnum::DISPONIBLE->value)->count();
+        $piezasAlquiladas = $this->disfrazPiezas()
+            ->where('status', DisfrazPiezaEnum::DISPONIBLE->value)
+            ->where('stock', '>', 0)
+            ->count();
+        if ($piezasAlquiladas === 0) {
+            $this->status = DisfrazStatusEnum::RESERVADO->value;
+        } elseif ($piezasAlquiladas === $totalPiezas) {
+            $this->status = DisfrazStatusEnum::DISPONIBLE->value;
+        } else {
+            $this->status = DisfrazStatusEnum::INCOMPLETO->value;
+        }
+
+        $this->save();
     }
 }

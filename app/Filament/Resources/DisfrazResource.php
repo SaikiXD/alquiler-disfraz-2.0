@@ -52,9 +52,9 @@ class DisfrazResource extends Resource
                 Section::make('Detalles de Precio e Imagen')->schema([
                     Forms\Components\TextInput::make('price')
                         ->label('Precio Sugerido')
-                        ->readOnly()
                         ->default(0)
                         ->prefix('Bs')
+                        ->reactive()
                         ->hintIcon(
                             'heroicon-m-question-mark-circle',
                             tooltip: 'El precio se actualizará automáticamente en función de las piezas agregadas.'

@@ -14,9 +14,9 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->string('image_path');
+            $table->string('image_path')->nullable();
             $table->decimal('price', 10, 2)->default(0);
-            $table->enum('status', ['disponible', 'incompleto', 'no_disponible'])->default('disponible');
+            $table->enum('status', ['disponible', 'reservado', 'incompleto'])->default('disponible');
             $table->timestamps();
         });
     }

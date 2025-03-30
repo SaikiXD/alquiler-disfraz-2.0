@@ -226,7 +226,7 @@ class PiezasRelationManager extends RelationManager
                         }
                         //asignar precio a disfraz
                         $disfraz = Disfraz::where('id', $record->disfraz_id)->first();
-                        $precioPieza = round($record->price * 0.2, 2);
+                        $precioPieza = round($record->price * 0.1, 2);
                         $disfrazprecio = round($disfraz->price + $precioPieza, 2);
                         $disfraz->update([
                             'price' => $disfrazprecio,

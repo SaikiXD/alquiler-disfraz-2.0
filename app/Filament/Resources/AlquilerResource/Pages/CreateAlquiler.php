@@ -40,18 +40,18 @@ class CreateAlquiler extends CreateRecord
                     $reservado = DisfrazPieza::where('disfraz_id', $alquilerDisfraz->disfraz_id)
                         ->where('pieza_id', $pieza_id)
                         ->where('status', 'reservado')
-                        ->first();
+                        ->get();
                     $disponible = DisfrazPieza::where('disfraz_id', $alquilerDisfraz->disfraz_id)
                         ->where('pieza_id', $pieza_id)
                         ->where('status', 'disponible')
-                        ->first();
-                    $stockDisponible = $disponible->stock;
+                        ->get();
+                    $stockDisponible = $disponible->first()?->stock ?? 0;
                     $cantidadReservada = min($cantidadDisfraces, $stockDisponible);
-                    if ($disponible) {
-                        $disponible->decrement('stock', $cantidadReservada);
+                    foreach ($disponible as $item) {
+                        $item->decrement('stock', $cantidadReservada);
                     }
-                    if ($reservado) {
-                        $reservado->increment('stock', $cantidadReservada);
+                    foreach ($reservado as $item) {
+                        $item->increment('stock', $cantidadReservada);
                     }
                     AlquilerDisfrazPieza::create([
                         'alquiler_disfraz_id' => $alquilerDisfraz->id,
@@ -59,26 +59,7 @@ class CreateAlquiler extends CreateRecord
                         'cantidad_reservada' => $cantidadReservada,
                     ]);
                 }
-                //aqui cambio el estado del disfraz
-                $piezasConStock = $disfraz
-                    ->disfrazPiezas()
-                    ->where('status', 'disponible')
-                    ->where('stock', '>', 0)
-                    ->count();
-                $totalPiezas = $disfraz->disfrazPiezas()->where('status', 'disponible')->count();
-                if ($piezasConStock == 0) {
-                    $disfraz->update([
-                        'status' => DisfrazStatusEnum::NO_DISPONIBLE->value,
-                    ]);
-                } elseif ($totalPiezas > $piezasConStock) {
-                    $disfraz->update([
-                        'status' => DisfrazStatusEnum::INCOMPLETO->value,
-                    ]);
-                } else {
-                    $disfraz->update([
-                        'status' => DisfrazStatusEnum::DISPONIBLE->value,
-                    ]);
-                }
+                $disfraz->actualizarEstado();
             }
         });
     }
