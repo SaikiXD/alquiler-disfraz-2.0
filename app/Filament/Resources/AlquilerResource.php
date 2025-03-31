@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\AlquilerStatusEnum;
+use App\Enums\DisfrazStatusEnum;
 use App\Filament\Resources\AlquilerResource\Pages;
 use App\Filament\Resources\AlquilerResource\RelationManagers;
 use App\Models\Alquiler;
@@ -64,6 +65,7 @@ class AlquilerResource extends Resource
                         ->addActionLabel('Añadir disfraz al pedido')
                         ->collapsed()
                         ->defaultItems(0)
+                        ->minItems(1)
                         ->schema([
                             Hidden::make('id'), // Esto es importante para que $get('../../id') funcione
                             Forms\Components\Grid::make(2)->schema([
@@ -80,37 +82,30 @@ class AlquilerResource extends Resource
                                     ->required()
                                     ->disabled(fn($get) => filled($get('id')))
                                     ->afterStateUpdated(function (callable $set) {
-                                        $set('disfraz_id', null); // 🔁 Limpia la selección anterior
                                         $set('piezas_completas', []);
                                         $set('piezas_seleccionadas', []);
                                         $set('precio_unitario', 0);
-                                        $set('cantidad', null);
                                     }),
                                 Forms\Components\Select::make('disfraz_id')
                                     ->label('Disfraz')
-                                    ->relationship(
-                                        name: 'disfraz',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: function ($query, $get, $state) {
-                                            $modoAlquiler = $get('modo_alquiler');
-                                            $alquilerId = request()->route('record');
-                                            if ($modoAlquiler === 'completo') {
-                                                $query->whereIn('status', ['disponible', 'reservado']);
-                                            } elseif ($modoAlquiler === 'por_pieza') {
-                                                $query->whereIn('status', ['disponible', 'incompleto']);
-                                            }
-                                        }
-                                    )
+                                    ->relationship('disfraz', 'name')
                                     ->searchable()
                                     ->preload()
                                     ->disabled(fn($get) => filled($get('id')))
                                     ->reactive()
                                     //->disabled(fn() => request()->route('record') !== null)
                                     ->getOptionLabelFromRecordUsing(function ($record) {
+                                        if (request()->routeIs('filament.disfraces.resources.alquilers.view')) {
+                                            return $record->name; // Solo el nombre si estás en la vista
+                                        }
                                         $alquilerId = request()->route('record');
                                         $stockDisponible = $record->stock_disponible;
-                                        $reservado = AlquilerDisfraz::obtenercantidad($record->id) ?? 0;
-
+                                        if ($record->status === DisfrazStatusEnum::INCOMPLETO) {
+                                            $stockDisponible = 0;
+                                        }
+                                        $reservado = AlquilerDisfraz::where('disfraz_id', $record->id)
+                                            ->where('alquiler_id', $alquilerId)
+                                            ->value('cantidad');
                                         $stockDisponible += $reservado;
 
                                         return "{$record->name} (Stock Disponible: {$stockDisponible})";

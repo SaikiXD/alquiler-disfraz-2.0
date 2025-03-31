@@ -17,7 +17,7 @@ enum DisfrazStatusEnum: string implements HasLabel, HasColor
     {
         return match ($this) {
             self::DISPONIBLE => 'Disponible',
-            self::RESERVADO => 'Reservado',
+            self::RESERVADO => 'No Disponible',
             self::INCOMPLETO => 'Incompleto',
         };
     }

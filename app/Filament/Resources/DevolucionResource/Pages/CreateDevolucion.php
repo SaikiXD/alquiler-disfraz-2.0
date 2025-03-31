@@ -6,6 +6,7 @@ use App\Enums\AlquilerStatusEnum;
 use App\Enums\DisfrazPiezaEnum;
 use App\Filament\Resources\DevolucionResource;
 use App\Models\Alquiler;
+use App\Models\AlquilerDisfraz;
 use App\Models\AlquilerDisfrazPieza;
 use App\Models\DisfrazPieza;
 use Filament\Actions;
@@ -16,6 +17,11 @@ class CreateDevolucion extends CreateRecord
     public function getTitle(): string
     {
         return 'Devolución';
+    }
+    protected function getRedirectUrl(): string
+    {
+        // Redirige automáticamente a la página de edición después de crear el registro
+        return \App\Filament\Resources\AlquilerResource::getUrl();
     }
 
     public function getBreadcrumb(): string
@@ -28,7 +34,7 @@ class CreateDevolucion extends CreateRecord
     {
         $devolucion = $this->record; // Obtener la devolución recién creada
         $alquilerId = $devolucion->alquiler_id;
-
+        $alquilerDisfrazId = AlquilerDisfraz::Where('alquiler_id', $alquilerId)->pluck('disfraz_id')->toArray();
         $alquiler = Alquiler::find($alquilerId);
         $alquiler->update([
             'status' => AlquilerStatusEnum::FINALIZADO, // Actualizamos la cantidad
@@ -84,6 +90,9 @@ class CreateDevolucion extends CreateRecord
                 'cantidad' => $cantidadDisponible, // o la cantidad devuelta si manejas otra lógica
                 'estado_pieza' => 'bueno',
             ]);
+        }
+        foreach ($alquilerDisfrazId as $disfraz) {
+            $disfraz->actualizarEstado();
         }
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\AlquilerResource\Pages;
 
+use App\Enums\AlquilerStatusEnum;
+use App\Enums\DisfrazPiezaEnum;
 use App\Enums\DisfrazStatusEnum;
 use App\Filament\Resources\AlquilerResource;
 use App\Models\AlquilerDisfraz;
@@ -9,108 +11,134 @@ use App\Models\AlquilerDisfrazPieza;
 use App\Models\Disfraz;
 use App\Models\DisfrazPieza;
 use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class EditAlquiler extends EditRecord
 {
     protected static string $resource = AlquilerResource::class;
 
-    protected array $disfrazIdsAntes = [];
+    protected Collection $disfrazAntes;
     protected function beforeSave(): void
     {
-        $this->disfrazIdsAntes = $this->record->alquilerDisfrazs()->pluck('disfraz_id')->toArray();
+        $this->disfrazAntes = $this->record->alquilerDisfrazs()->with('alquilerPiezas')->get();
     }
     protected function getHeaderActions(): array
     {
-        return [Actions\DeleteAction::make()];
+        return [
+            Action::make('cancelar')
+                ->label('Cancelar Alquiler')
+                ->color('danger')
+                ->icon('heroicon-o-x-circle')
+                ->requiresConfirmation()
+                ->action(function () {
+                    $alquiler = $this->record->load('alquilerDisfrazs');
+                    $disfrazIds = $alquiler->alquilerDisfrazs->pluck('disfraz_id')->toArray();
+                    foreach ($alquiler->alquilerDisfrazs as $disfraz) {
+                        $piezasDisfraz = $disfraz->piezas_seleccionadas ?? [];
+                        foreach ($piezasDisfraz as $id_pieza) {
+                            $stockReservado = AlquilerDisfrazPieza::where('alquiler_disfraz_id', $disfraz->id)
+                                ->Where('pieza_id', $id_pieza)
+                                ->value('cantidad_reservada');
+                            $piezaDisponible = DisfrazPieza::where('pieza_id', $id_pieza)
+                                ->where('status', DisfrazPiezaEnum::DISPONIBLE->value)
+                                ->get();
+                            $piezaReservada = DisfrazPieza::where('pieza_id', $id_pieza)
+                                ->where('status', DisfrazPiezaEnum::RESERVADO->value)
+                                ->get();
+                            foreach ($piezaReservada as $item) {
+                                $item->decrement('stock', $stockReservado);
+                            }
+                            foreach ($piezaDisponible as $item) {
+                                $item->increment('stock', $stockReservado);
+                            }
+                        }
+                        $disfrazEstado = Disfraz::find($disfraz->disfraz_id);
+                        $disfrazEstado->actualizarEstado();
+                    }
+                    $this->record->update([
+                        'status' => AlquilerStatusEnum::CANCELADO, // Asegúrate de tener este estado
+                    ]);
+                    Notification::make()->title('Alquiler cancelado')->success()->send();
+                }),
+        ];
     }
     protected function afterSave(): void
     {
         $alquiler = $this->record->load('alquilerDisfrazs');
+        //aqui restauro stock del disfraz eliminado
         $disfrazIdsActuales = $alquiler->alquilerDisfrazs->pluck('disfraz_id')->toArray();
-        $disfrazIdsEliminados = array_diff($this->disfrazIdsAntes, $disfrazIdsActuales);
+        $idsAnteriores = $this->disfrazAntes->pluck('disfraz_id')->toArray();
+        $disfrazIdsEliminados = array_diff($idsAnteriores, $disfrazIdsActuales);
         foreach ($disfrazIdsEliminados as $disfraz_id) {
-            $alquilerDisfraz = AlquilerDisfraz::where('disfraz_id', $disfraz_id)
-                ->where('alquiler_id', $alquiler->id)
-                ->first();
-            if ($alquilerDisfraz) {
-                $cantidadReservada = $alquilerDisfraz->cantidad;
-                $piezasDisfraz = $alquilerDisfraz->piezas_seleccionadas;
-                foreach ($piezasDisfraz as $id_pieza) {
-                    $piezaReservada = DisfrazPieza::where('pieza_id', $id_pieza)->where('status', 'reservado')->get();
-                    $stockReservado = $alquilerDisfraz->alquilerPiezas
-                        ->where('pieza_id', $id_pieza)
-                        ->value('cantidad_reservada');
-                    $reservado = min($cantidadReservada, $stockReservado);
-                    $piezaDisponible = DisfrazPieza::where('pieza_id', $id_pieza)->where('status', 'disponible')->get();
-                    if ($piezaReservada && $piezaDisponible) {
-                        foreach ($piezaReservada as $item) {
-                            $item->decrement('stock', $reservado);
-                        }
-                        foreach ($piezaDisponible as $item) {
-                            $item->increment('stock', $reservado);
-                        }
-                    }
+            $disfrazEliminado = $this->disfrazAntes->firstWhere('disfraz_id', $disfraz_id);
+            $piezasDisfraz = $disfrazEliminado->piezas_seleccionadas ?? [];
+            foreach ($piezasDisfraz as $id_pieza) {
+                $stockReservado = $disfrazEliminado->alquilerPiezas
+                    ->where('pieza_id', $id_pieza)
+                    ->value('cantidad_reservada');
+                $piezaDisponible = DisfrazPieza::where('pieza_id', $id_pieza)
+                    ->where('status', DisfrazPiezaEnum::DISPONIBLE->value)
+                    ->get();
+                $piezaReservada = DisfrazPieza::where('pieza_id', $id_pieza)
+                    ->where('status', DisfrazPiezaEnum::RESERVADO->value)
+                    ->get();
+                foreach ($piezaReservada as $item) {
+                    $item->decrement('stock', $stockReservado);
+                }
+                foreach ($piezaDisponible as $item) {
+                    $item->increment('stock', $stockReservado);
                 }
             }
         }
-        $disfrazIdAntes = $this->disfrazIdsAntes;
-        $cont = 0;
+        //recorro los disfraces guardados
         foreach ($alquiler->alquilerDisfrazs as $alquilerDisfraz) {
-            $disfrazantes = $disfrazIdAntes[$cont];
             $cantidadNueva = $alquilerDisfraz->cantidad;
             $disfrazId = $alquilerDisfraz->disfraz_id;
             $disfraz = Disfraz::find($disfrazId);
-            $piezaIds = $disfraz->disfrazpiezas()->pluck('id')->toArray();
             $piezasSeleccionadas = $alquilerDisfraz->piezas_seleccionadas;
-            if ($alquilerDisfraz->modo_alquiler === 'completo') {
-                if (empty($piezasSeleccionadas) || $disfrazantes != $disfrazId) {
-                    $piezas = DisfrazPieza::where('disfraz_id', $disfrazId)
-                        ->where('status', 'disponible')
-                        ->pluck('pieza_id')
-                        ->toArray();
-                    $alquilerDisfraz->update([
-                        'piezas_seleccionadas' => $piezas,
-                    ]);
-                    $piezasSeleccionadas = $piezas;
-                }
+            if (empty($piezasSeleccionadas)) {
+                $piezas = DisfrazPieza::where('disfraz_id', $disfrazId)
+                    ->where('status', DisfrazPiezaEnum::DISPONIBLE->value)
+                    ->pluck('pieza_id')
+                    ->toArray();
+                $alquilerDisfraz->update([
+                    'piezas_seleccionadas' => $piezas,
+                ]);
+                $piezasSeleccionadas = $piezas;
             }
             $piezasAntiguas = AlquilerDisfrazPieza::where('alquiler_disfraz_id', $alquilerDisfraz->id)
                 ->pluck('pieza_id')
                 ->toArray();
-            // Determinar las piezas que han sido deseleccionadas
+            // Determinar las piezas que han sido deseleccionadas (Esto es para modo por pieza)
             $piezasEliminadas = array_diff($piezasAntiguas, $piezasSeleccionadas);
-
             // Restaurar stock de las piezas eliminadas
             foreach ($piezasEliminadas as $pieza_id) {
                 $alquilerDisfrazPieza = AlquilerDisfrazPieza::where('alquiler_disfraz_id', $alquilerDisfraz->id)
                     ->where('pieza_id', $pieza_id)
                     ->first();
-
                 if ($alquilerDisfrazPieza) {
                     $cantidadReservada = $alquilerDisfrazPieza->cantidad_reservada;
-
-                    $disfrazPiezaReservado = DisfrazPieza::where('disfraz_id', $alquilerDisfraz->disfraz_id)
+                    $disfrazPiezaReservado = DisfrazPieza::where('disfraz_id', $disfrazId)
                         ->where('pieza_id', $pieza_id)
-                        ->where('status', 'reservado')
+                        ->where('status', DisfrazPiezaEnum::RESERVADO->value)
                         ->first();
-
-                    $disfrazPiezaDisponible = DisfrazPieza::where('disfraz_id', $alquilerDisfraz->disfraz_id)
+                    $disfrazPiezaDisponible = DisfrazPieza::where('disfraz_id', $disfrazId)
                         ->where('pieza_id', $pieza_id)
-                        ->where('status', 'disponible')
+                        ->where('status', DisfrazPiezaEnum::DISPONIBLE->value)
                         ->first();
-
                     if ($disfrazPiezaReservado && $disfrazPiezaDisponible) {
                         // Devolver stock de la pieza eliminada
-                        $disfrazPiezaDisponible->update([
-                            'stock' => $disfrazPiezaDisponible->stock + $cantidadReservada,
+                        $disfrazPiezaDisponible->increment([
+                            'stock' => $cantidadReservada,
                         ]);
-                        $disfrazPiezaReservado->update([
-                            'stock' => $disfrazPiezaReservado->stock - $cantidadReservada,
+                        $disfrazPiezaReservado->decrement([
+                            'stock' => $cantidadReservada,
                         ]);
                     }
-
                     // Eliminar el registro de la pieza eliminada
                     $alquilerDisfrazPieza->delete();
                 }
@@ -139,7 +167,6 @@ class EditAlquiler extends EditRecord
                         'stock' => $disfrazPiezaReservado->stock - $cantidadAnterior,
                     ]);
                 }
-
                 // Aplicar nueva reserva
                 $stockDisponible = $disfrazPiezaDisponible->stock;
                 $nuevoStock = min($cantidadNueva, $stockDisponible);

@@ -34,15 +34,15 @@ class Disfraz extends Model
     public function getStockDisponibleAttribute(): int
     {
         // Obtiene las piezas disponibles del disfraz
-        $piezasDisponibles = $this->disfrazPiezas()->where('status', 'disponible')->get();
+        $piezasDisponibles = $this->disfrazPiezas()->where('status', DisfrazPiezaEnum::DISPONIBLE->value)->get();
         // Si no hay piezas disponibles, no hay stock
         if ($piezasDisponibles->isEmpty()) {
             return 0;
         }
         if ($this->status === DisfrazStatusEnum::DISPONIBLE) {
-            return $piezasDisponibles->min('stock');
+            return $piezasDisponibles->min('stock') ?? 0;
         }
-        return $piezasDisponibles->max('stock');
+        return $piezasDisponibles->where('stock', '>', 0)->min('stock') ?? 0;
         // Devuelve el stock mínimo entre todas las piezas disponibles
     }
     public function actualizarEstado()

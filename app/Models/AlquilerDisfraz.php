@@ -34,8 +34,8 @@ class AlquilerDisfraz extends Model
     {
         return $this->hasMany(AlquilerDisfrazPieza::class);
     }
-    public static function obtenercantidad(int $id): ?float
+    public static function obtenerCantidad(int $disfrazId, int $alquilerId): ?float
     {
-        return self::where('id', $id)->value('cantidad');
+        return self::where('disfraz_id', $disfrazId)->where('alquiler_id', $alquilerId)->value('cantidad');
     }
 }
