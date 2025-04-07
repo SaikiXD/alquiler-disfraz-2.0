@@ -2,15 +2,11 @@
 
 namespace App\Filament\Resources\AlquilerResource\Pages;
 
-use App\Enums\DisfrazPiezaEnum;
-use App\Enums\DisfrazStatusEnum;
+use App\Enums\DisfrazPiezaStatusEnum;
 use App\Filament\Resources\AlquilerResource;
-use App\Models\Alquiler;
-use App\Models\AlquilerDisfraz;
 use App\Models\AlquilerDisfrazPieza;
 use App\Models\Disfraz;
 use App\Models\DisfrazPieza;
-use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
 
@@ -26,31 +22,19 @@ class CreateAlquiler extends CreateRecord
                 $cantidadDisfraces = $alquilerDisfraz->cantidad;
                 $disfraz = Disfraz::find($alquilerDisfraz->disfraz_id);
                 $piezasSeleccionadas = $alquilerDisfraz->piezas_seleccionadas;
-                if (empty($piezasSeleccionadas)) {
-                    $piezas = DisfrazPieza::where('disfraz_id', $alquilerDisfraz->disfraz_id)
-                        ->where('status', 'disponible')
-                        ->pluck('pieza_id')
-                        ->toArray();
-                    $alquilerDisfraz->update([
-                        'piezas_seleccionadas' => $piezas,
-                    ]);
-                    $piezasSeleccionadas = $piezas;
-                }
                 foreach ($piezasSeleccionadas as $pieza_id) {
-                    $reservado = DisfrazPieza::where('disfraz_id', $alquilerDisfraz->disfraz_id)
-                        ->where('pieza_id', $pieza_id)
-                        ->where('status', 'reservado')
+                    $alquilado = DisfrazPieza::where('pieza_id', $pieza_id)
+                        ->where('status', DisfrazPiezaStatusEnum::ALQUILADO->value)
                         ->get();
-                    $disponible = DisfrazPieza::where('disfraz_id', $alquilerDisfraz->disfraz_id)
-                        ->where('pieza_id', $pieza_id)
-                        ->where('status', 'disponible')
+                    $disponible = DisfrazPieza::where('pieza_id', $pieza_id)
+                        ->where('status', DisfrazPiezaStatusEnum::DISPONIBLE->value)
                         ->get();
                     $stockDisponible = $disponible->first()?->stock ?? 0;
                     $cantidadReservada = min($cantidadDisfraces, $stockDisponible);
                     foreach ($disponible as $item) {
                         $item->decrement('stock', $cantidadReservada);
                     }
-                    foreach ($reservado as $item) {
+                    foreach ($alquilado as $item) {
                         $item->increment('stock', $cantidadReservada);
                     }
                     AlquilerDisfrazPieza::create([

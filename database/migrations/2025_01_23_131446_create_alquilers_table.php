@@ -12,14 +12,14 @@ return new class extends Migration {
     {
         Schema::create('alquilers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('cliente_id')->nullable()->constrained('clientes')->nullOnDelete();
-            $table->string('image_path_garantia')->nullable()->default('N/A');
+            $table->foreignId('cliente_id')->constrained('clientes')->onDelete('cascade');
+            $table->string('image_path_garantia')->nullable();
             $table->string('tipo_garantia');
-            $table->string('description')->nullable()->default('N/A');
+            $table->string('detalles_garantia')->nullable();
             $table->decimal('valor_garantia', 10, 2);
-            $table->dateTime('fecha_alquiler');
+            $table->date('fecha_alquiler');
             $table->date('fecha_devolucion');
-            $table->enum('status', ['pendiente', 'alquilado', 'finalizado', 'cancelado'])->default('pendiente');
+            $table->enum('status', ['alquilado', 'finalizado'])->default('alquilado');
             $table->timestamps();
         });
     }

@@ -3,9 +3,11 @@
 namespace App\Providers\Filament;
 
 use Filament\Http\Middleware\Authenticate;
+use Althinect\FilamentSpatieRolesPermissions\FilamentSpatieRolesPermissionsPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -27,12 +29,20 @@ class DisfracesPanelProvider extends PanelProvider
             ->id('disfraces')
             ->path('disfraces')
             ->login()
+            ->brandName('Panel')
+            ->navigationGroups([
+                NavigationGroup::make('Inventario')->collapsed(),
+                NavigationGroup::make('Operaciones')->collapsed(),
+                NavigationGroup::make('Reportes')->collapsed(),
+                NavigationGroup::make('Roles y Permisos'),
+            ])
+            ->sidebarCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::Amber,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->pages([Pages\Dashboard::class])
+            ->pages([\App\Filament\Pages\Dashboard::class])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 //Widgets\AccountWidget::class,
@@ -49,6 +59,7 @@ class DisfracesPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->plugin(FilamentSpatieRolesPermissionsPlugin::make())
             ->authMiddleware([Authenticate::class]);
     }
 }

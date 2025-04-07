@@ -8,17 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class Pieza extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'tipo_id'];
-    /*
-    public function disfrazs()
-    {
-        return $this->belongsToMany(Disfraz::class)
-            ->withTimestamps()
-            ->withPivot('stock', 'color', 'size', 'material', 'status');
-    }*/
+    protected $fillable = ['tipo_pieza_id', 'talla_id', 'name', 'valor_reposicion', 'color', 'material', 'notas'];
     public function tipo()
     {
-        return $this->belongsTo(Tipo::class, 'tipo_id');
+        return $this->belongsTo(TipoPieza::class);
+    }
+    public function talla()
+    {
+        return $this->belongsTo(Talla::class);
     }
 
     public function disfrazPiezas()

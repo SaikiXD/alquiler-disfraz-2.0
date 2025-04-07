@@ -18,7 +18,7 @@ class CategoriaResource extends Resource
     protected static ?string $model = Categoria::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
-
+    protected static ?string $navigationGroup = 'Inventario';
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -32,15 +32,7 @@ class CategoriaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable(),
-                Tables\Columns\TextColumn::make('status')->numeric()->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('description'),
             ])
             ->filters([
                 //

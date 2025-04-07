@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class DisfrazResource extends Resource
 {
     protected static ?string $model = Disfraz::class;
-
+    protected static ?string $navigationGroup = 'Inventario';
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
     public static function getPluralModelLabel(): string
@@ -29,77 +29,87 @@ class DisfrazResource extends Resource
     }
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            Split::make([
+        return $form
+            ->schema([
                 Section::make([
-                    Forms\Components\TextInput::make('name')
+                    Forms\Components\TextInput::make('nombre')
                         ->label('Nombre del Disfraz')
                         ->required()
                         ->placeholder('Ejemplo: Traje de Batman')
-                        ->maxLength(100),
-                    Forms\Components\Textarea::make('description')->label('Descripción')->rows(3)->maxLength(500),
+                        ->maxLength(100)
+                        ->columnSpan([
+                            'sm' => 2,
+                        ]),
+                    Forms\Components\Textarea::make('descripcion')
+                        ->label('Descripción')
+                        ->rows(3)
+                        ->maxLength(500)
+                        ->columnSpan([
+                            'sm' => 2,
+                        ]),
                     Forms\Components\Select::make('categorias')
                         ->label('Seleccione las Categorías')
                         ->relationship('categorias', 'name')
                         ->multiple()
-                        ->preload()
                         ->required()
+                        ->preload()
                         ->searchable()
                         ->optionsLimit(10),
-                ]),
-            ])->from('md'),
-            Split::make([
-                Section::make('Detalles de Precio e Imagen')->schema([
-                    Forms\Components\TextInput::make('price')
-                        ->label('Precio Sugerido')
+                    Forms\Components\Select::make('genero')
+                        ->label('Genero')
+                        ->options([
+                            'masculino' => 'Masculino',
+                            'femenino' => 'Femenino',
+                            'unisex' => 'Unisex',
+                        ])
+                        ->required(),
+                ])
+                    ->columns([
+                        'sm' => 2,
+                    ])
+                    ->columnSpan(2),
+                Section::make([
+                    Forms\Components\FileUpload::make('image_path')
+                        ->label('Imagen de Referencia')
+                        ->disk('public')
+                        ->directory('disfraces')
+                        ->image()
+                        ->imageEditor()
+                        ->panelLayout('integrated') //nose que hace pero centro el texto de dentros
+                        ->panelAspectRatio('4:2')
+                        ->maxSize(1024)
+                        ->required(),
+                    Forms\Components\TextInput::make('precio_alquiler')
+                        ->label('Precio de Alquiler')
                         ->default(0)
                         ->prefix('Bs')
                         ->reactive()
-                        ->hintIcon(
-                            'heroicon-m-question-mark-circle',
-                            tooltip: 'El precio se actualizará automáticamente en función de las piezas agregadas.'
-                        )
-                        ->hintColor('primary'),
-
-                    Forms\Components\FileUpload::make('image_path')
-                        ->label('Imagen de Referencia')
-                        ->image()
-                        ->imageEditor()
-                        ->maxSize(1024)
+                        ->numeric()
                         ->required(),
-                ]),
-            ])->from('md'),
-        ]);
+                ])->columnSpan(1),
+            ])
+
+            ->columns(3);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')->label('Nombre')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('nombre')->label('Nombre')->searchable()->sortable(),
                 Tables\Columns\ImageColumn::make('image_path')->label('imagen'),
                 Tables\Columns\TextColumn::make('stock_disponible')->label('Stock'),
-                Tables\Columns\TextColumn::make('price')->label('precio')->money('BOB', locale: 'es_BO')->sortable(),
-                Tables\Columns\TextColumn::make('categorias.name')
-                    ->label('Categorías')
-                    ->badge()
-                    ->sortable()
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('precio_alquiler')
+                    ->label('Precio de Alquiler')
+                    ->money('BOB', locale: 'es_BO')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('categorias.name')->label('Categorías')->badge()->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
                     ->formatStateUsing(
                         fn($state) => $state instanceof DisfrazStatusEnum ? $state->name : (string) $state
                     ),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //

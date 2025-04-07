@@ -14,31 +14,35 @@ class CategoriaDisfrazSeeder extends Seeder
     public function run(): void
     {
         DB::table('categoria_disfraz')->insert([
-            // Tinku
+            // Morenada
             ['categoria_id' => 1, 'disfraz_id' => 1],
-            ['categoria_id' => 8, 'disfraz_id' => 1],
-            ['categoria_id' => 10, 'disfraz_id' => 1],
-
-            // Caporal
             ['categoria_id' => 1, 'disfraz_id' => 2],
+            ['categoria_id' => 8, 'disfraz_id' => 1],
             ['categoria_id' => 8, 'disfraz_id' => 2],
 
-            // Sailor Moon
+            // Caporal
             ['categoria_id' => 2, 'disfraz_id' => 3],
-            ['categoria_id' => 9, 'disfraz_id' => 3],
-            ['categoria_id' => 4, 'disfraz_id' => 3],
-
-            // Kirito
             ['categoria_id' => 2, 'disfraz_id' => 4],
-            ['categoria_id' => 5, 'disfraz_id' => 4],
-            ['categoria_id' => 4, 'disfraz_id' => 4],
-            ['categoria_id' => 10, 'disfraz_id' => 4],
+            ['categoria_id' => 8, 'disfraz_id' => 3],
+            ['categoria_id' => 8, 'disfraz_id' => 4],
 
-            // Spider-Man
+            // Tinku
             ['categoria_id' => 3, 'disfraz_id' => 5],
-            ['categoria_id' => 9, 'disfraz_id' => 5],
-            ['categoria_id' => 4, 'disfraz_id' => 5],
-            ['categoria_id' => 7, 'disfraz_id' => 5],
+            ['categoria_id' => 3, 'disfraz_id' => 6],
+            ['categoria_id' => 6, 'disfraz_id' => 5],
+            ['categoria_id' => 6, 'disfraz_id' => 6],
+
+            // Diablada
+            ['categoria_id' => 4, 'disfraz_id' => 7],
+            ['categoria_id' => 4, 'disfraz_id' => 8],
+            ['categoria_id' => 8, 'disfraz_id' => 7],
+            ['categoria_id' => 8, 'disfraz_id' => 8],
+
+            // Saya Afroboliviana
+            ['categoria_id' => 5, 'disfraz_id' => 9],
+            ['categoria_id' => 5, 'disfraz_id' => 10],
+            ['categoria_id' => 6, 'disfraz_id' => 9],
+            ['categoria_id' => 6, 'disfraz_id' => 10],
         ]);
     }
 }

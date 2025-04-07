@@ -3,12 +3,15 @@
 namespace App\Filament\Resources\DevolucionResource\Pages;
 
 use App\Enums\AlquilerStatusEnum;
-use App\Enums\DisfrazPiezaEnum;
+use App\Enums\DisfrazPiezaStatusEnum;
 use App\Filament\Resources\DevolucionResource;
 use App\Models\Alquiler;
 use App\Models\AlquilerDisfraz;
 use App\Models\AlquilerDisfrazPieza;
+use App\Models\DevolucionDisfrazPieza;
+use App\Models\Disfraz;
 use App\Models\DisfrazPieza;
+use App\Models\Mantenimiento;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -39,59 +42,76 @@ class CreateDevolucion extends CreateRecord
         $alquiler->update([
             'status' => AlquilerStatusEnum::FINALIZADO, // Actualizamos la cantidad
         ]);
-        $piezasDanadasStock = $devolucion->devolucionPiezas()->get()->keyBy('alquiler_disfraz_pieza_id');
-
-        // Obtener todas las piezas alquiladas de ese alquiler
+        $piezasDanadasStock = $devolucion->devolucionPiezas()->get();
+        $piezasDanadas = $piezasDanadasStock
+            ->where('estado_pieza', 'danado')
+            ->groupBy('alquiler_disfraz_pieza_id')
+            ->map(function ($items) {
+                return (object) [
+                    'id' => $items->first()->id,
+                    'cantidad' => $items->sum('cantidad'),
+                    'alquiler_disfraz_pieza_id' => $items->first()->alquiler_disfraz_pieza_id,
+                    'estado' => $items->first()->estado_pieza,
+                ];
+            })
+            ->sortBy('id');
+        $piezasPerdidas = $piezasDanadasStock
+            ->where('estado_pieza', 'perdido')
+            ->groupBy('alquiler_disfraz_pieza_id')
+            ->map(function ($items) {
+                return (object) [
+                    'id' => $items->first()->id,
+                    'cantidad' => $items->sum('cantidad'),
+                    'alquiler_disfraz_pieza_id' => $items->first()->alquiler_disfraz_pieza_id,
+                    'estado' => $items->first()->estado_pieza,
+                ];
+            })
+            ->sortBy('id');
         $todasLasPiezas = AlquilerDisfrazPieza::whereHas('alquilerDisfraz', function ($query) use ($alquilerId) {
             $query->where('alquiler_id', $alquilerId);
         })->get();
-
         foreach ($todasLasPiezas as $pieza) {
-            $piezaDanada = null;
-            if (isset($piezasDanadasStock[$pieza->id])) {
-                // Si existe, obtener el registro correspondiente
-                $piezaDanada = $piezasDanadasStock[$pieza->id];
-
-                // Asignar el valor de cantidad a stockDanados
-                $stockDanados = $piezaDanada->cantidad;
-            } else {
-                // Si no existe, asignar 0
-                $stockDanados = 0;
+            $cantidadAlquilada = $pieza->cantidad_reservada;
+            $piezaDanado = $piezasDanadas->where('alquiler_disfraz_pieza_id', $pieza->id)->first();
+            $stockDanado = $piezaDanado?->cantidad ?? 0;
+            $piezaPerdida = $piezasPerdidas->where('alquiler_disfraz_pieza_id', $pieza->id)->first();
+            $stockperdido = $piezaPerdida?->cantidad ?? 0;
+            $stockBueno = $cantidadAlquilada - $stockDanado - $stockperdido;
+            if ($stockBueno > 0) {
+                $devolucion->devolucionPiezas()->create([
+                    'alquiler_disfraz_pieza_id' => $pieza->id,
+                    'cantidad' => $stockBueno,
+                    'estado_pieza' => 'bueno',
+                ]);
             }
-            $piezasEstados = DisfrazPieza::where('disfraz_id', $pieza->alquilerDisfraz->disfraz_id)
-                ->where('pieza_id', $pieza->pieza_id)
-                ->get()
-                ->keyBy(fn($pieza) => $pieza->status->value);
-
-            $disfrazPiezaReservado = $piezasEstados[DisfrazPiezaEnum::RESERVADO->value] ?? null;
-            $disfrazPiezaDisponible = $piezasEstados[DisfrazPiezaEnum::DISPONIBLE->value] ?? null;
-            $disfrazPiezaDanado = $piezasEstados[DisfrazPiezaEnum::DAÑADO->value] ?? null;
-            $disfrazPiezaPerdido = $piezasEstados[DisfrazPiezaEnum::PERDIDO->value] ?? null;
-
-            if ($disfrazPiezaReservado && $disfrazPiezaDisponible) {
-                // Mover la cantidad reservada a stock disponible
-                //abs valor absoluto
-                $cantidadDisponible = $pieza->cantidad_reservada - $stockDanados;
-                $cantidadReservado = $pieza->cantidad_reservada;
-
-                $disfrazPiezaDisponible->increment('stock', $cantidadDisponible);
-                $disfrazPiezaReservado->decrement('stock', $cantidadReservado);
+            $devolucionpiezaId = DevolucionDisfrazPieza::where('alquiler_disfraz_pieza_id', $pieza->id)->value('id');
+            if ($stockDanado > 0) {
+                Mantenimiento::create([
+                    'devolucion_disfraz_pieza_id' => $devolucionpiezaId,
+                    'pieza_id' => $pieza->pieza_id,
+                    'estado' => 'reparacion',
+                    'cantidad' => $stockDanado,
+                ]);
             }
-            if ($piezaDanada !== null) {
-                if ($piezaDanada->estado_pieza == 'dañado') {
-                    $disfrazPiezaDanado->increment('stock', $stockDanados);
+            if ($stockBueno > 0) {
+                Mantenimiento::create([
+                    'devolucion_disfraz_pieza_id' => $devolucionpiezaId,
+                    'pieza_id' => $pieza->pieza_id,
+                    'estado' => 'limpieza',
+                    'cantidad' => $stockBueno,
+                ]);
+            }
+            if ($stockperdido > 0) {
+                $disfrazPieza = DisfrazPieza::where('pieza_id', $pieza->pieza_id)
+                    ->where('status', DisfrazPiezaStatusEnum::ALQUILADO->value)
+                    ->get();
+                foreach ($disfrazPieza as $dP) {
+                    $dP->decrement('stock', $stockperdido);
                 }
-                if ($piezaDanada->estado_pieza == 'perdido') {
-                    $disfrazPiezaPerdido->increment('stock', $stockDanados);
-                }
             }
-            $devolucion->devolucionPiezas()->create([
-                'alquiler_disfraz_pieza_id' => $pieza->id,
-                'cantidad' => $cantidadDisponible, // o la cantidad devuelta si manejas otra lógica
-                'estado_pieza' => 'bueno',
-            ]);
         }
-        foreach ($alquilerDisfrazId as $disfraz) {
+        foreach ($alquilerDisfrazId as $disfraz_id) {
+            $disfraz = Disfraz::find($disfraz_id);
             $disfraz->actualizarEstado();
         }
     }

@@ -12,8 +12,14 @@ return new class extends Migration {
     {
         Schema::create('piezas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tipo_id')->constrained('tipos')->onDelete('cascade');
+            $table->foreignId('tipo_pieza_id')->constrained('tipo_piezas')->onDelete('cascade');
+            $table->foreignId('talla_id')->nullable()->constrained('tallas')->onDelete('set null');
             $table->string('name');
+            $table->decimal('valor_reposicion', 10, 2)->default(0);
+            $table->string('color');
+            $table->string('material');
+            $table->text('notas')->nullable();
+
             $table->timestamps();
         });
     }

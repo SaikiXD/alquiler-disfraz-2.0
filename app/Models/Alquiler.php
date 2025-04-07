@@ -6,6 +6,7 @@ use App\Enums\AlquilerStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Alquiler extends Model
 {
@@ -14,7 +15,7 @@ class Alquiler extends Model
     protected $fillable = [
         'cliente_id',
         'image_path_garantia',
-        'description',
+        'detalles_garantia',
         'tipo_garantia',
         'valor_garantia',
         'fecha_alquiler',
@@ -29,13 +30,6 @@ class Alquiler extends Model
     {
         return $this->belongsTo(Cliente::class);
     }
-
-    /*public function disfraces()
-    {
-        return $this->belongsToMany(Disfraz::class, 'alquiler_disfraz')
-            ->withPivot('cantidad', 'precio_unitario')
-            ->withTimestamps();
-    }*/
     public function alquilerDisfrazs(): HasMany
     {
         return $this->hasMany(AlquilerDisfraz::class);
@@ -43,5 +37,10 @@ class Alquiler extends Model
     public function devolucion(): HasMany
     {
         return $this->hasMany(Devolucion::class);
+    }
+    public function getTotalAttribute(): int
+    {
+        $subTotal = $this->alquilerDisfrazs()->sum(DB::raw('cantidad * precio_alquiler'));
+        return $subTotal + $this->valor_garantia;
     }
 }

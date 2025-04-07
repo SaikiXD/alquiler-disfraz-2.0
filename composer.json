@@ -7,10 +7,14 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "althinect/filament-spatie-roles-permissions": "^2.3",
+        "barryvdh/laravel-dompdf": "^3.1",
         "filament/filament": "^3.2",
+        "flowframe/laravel-trend": "^0.4.0",
         "laravel-lang/lang": "^15.19",
         "laravel/framework": "^11.31",
-        "laravel/tinker": "^2.9"
+        "laravel/tinker": "^2.9",
+        "spatie/laravel-permission": "^6.16"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.14",

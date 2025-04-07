@@ -10,5 +10,5 @@ class Cliente extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-    protected $fillable = ['user_id', 'name', 'ci', 'email', 'address', 'phone', 'status'];
+    protected $fillable = ['user_id', 'name', 'ci', 'email', 'address', 'phone'];
 }

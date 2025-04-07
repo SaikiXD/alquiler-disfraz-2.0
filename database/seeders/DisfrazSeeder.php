@@ -12,53 +12,123 @@ class DisfrazSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('disfrazs')->insert([
+        $disfraces = [
+            // Morenada
             [
-                'name' => 'Tinku',
-                'description' =>
-                    'Traje tradicional guerrero de la cultura andina, usado en rituales y danzas de combate.',
-                'image_path' => 'tinku.jpg',
-                'price' => 130.0,
+                'nombre' => 'Traje de Morenada',
+                'descripcion' =>
+                    'Traje típico de la danza Morenada para varón, incluye chaqueta bordada, pantalón y máscara metálica.',
+                'image_path' => 'disfraces/morenadah.jpg',
+                'genero' => 'masculino',
+                'precio_alquiler' => 120.0,
                 'status' => 'disponible',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Caporal',
-                'description' => 'Disfraz típico de la danza Caporales, con bordados brillantes y botas altas.',
-                'image_path' => 'caporal.jpg',
-                'price' => 150.0,
+                'nombre' => 'Traje de Morenada',
+                'descripcion' =>
+                    'Pollera bordada, blusa brillante y sombrero con plumas para la danza Morenada femenina.',
+                'image_path' => 'disfraces/morenadam.png',
+                'genero' => 'femenino',
+                'precio_alquiler' => 110.0,
+                'status' => 'disponible',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // Caporales
+            [
+                'nombre' => 'Traje de Caporal',
+                'descripcion' => 'Traje de Caporal con botas, sombrero y bordados brillantes para varón.',
+                'image_path' => 'disfraces/caporalh.jpg',
+                'genero' => 'masculino',
+                'precio_alquiler' => 130.0,
                 'status' => 'disponible',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Sailor Moon',
-                'description' => 'Traje de la heroína mágica del anime clásico. Ideal para cosplay y eventos otaku.',
-                'image_path' => 'sailor-moon.jpg',
-                'price' => 170.0,
+                'nombre' => 'Traje de Caporal',
+                'descripcion' => 'Mini pollera bordada, blusa ajustada y botas altas para la danza Caporal femenina.',
+                'image_path' => 'disfraces/caporalm.jpg',
+                'genero' => 'femenino',
+                'precio_alquiler' => 120.0,
+                'status' => 'disponible',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // Tinku
+            [
+                'nombre' => 'Traje de Tinku',
+                'descripcion' =>
+                    'Traje tradicional del Tinku masculino, incluye poncho, gorro y pantalón de colores vivos.',
+                'image_path' => 'disfraces/tinkuh.jpg',
+                'genero' => 'masculino',
+                'precio_alquiler' => 90.0,
                 'status' => 'disponible',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Kirito (SAO)',
-                'description' => 'Disfraz del espadachín negro de Sword Art Online. Con abrigo largo y accesorios.',
-                'image_path' => 'kirito.jpg',
-                'price' => 180.0,
+                'nombre' => 'Traje de Tinku',
+                'descripcion' => 'Traje de Tinku para mujer con pollera amplia, chalina y adornos en la cabeza.',
+                'image_path' => 'disfraces/tinkum.jpg',
+                'genero' => 'femenino',
+                'precio_alquiler' => 85.0,
+                'status' => 'disponible',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // Diablada
+            [
+                'nombre' => 'Traje de Diablada',
+                'descripcion' => 'Traje de diablo con máscara elaborada, capa y bordados brillantes para varón.',
+                'image_path' => 'disfraces/diabladah.jpg',
+                'genero' => 'masculino',
+                'precio_alquiler' => 140.0,
                 'status' => 'disponible',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Spider-Man',
-                'description' => 'Icónico traje del superhéroe arácnido, ideal para niños y adultos.',
-                'image_path' => 'spiderman.jpg',
-                'price' => 160.0,
+                'nombre' => 'Traje de Diablada',
+                'descripcion' => 'Traje femenino de Diablada con pollera, corset bordado y máscara opcional.',
+                'image_path' => 'disfraces/diabladam.jpg',
+                'genero' => 'femenino',
+                'precio_alquiler' => 135.0,
                 'status' => 'disponible',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+
+            // Saya Afroboliviana
+            [
+                'nombre' => 'Traje de Saya',
+                'descripcion' => 'Traje varonil de Saya afroboliviana con camisa, pantalón y sombrero.',
+                'image_path' => 'disfraces/sayah.png',
+                'genero' => 'masculino',
+                'precio_alquiler' => 100.0,
+                'status' => 'disponible',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'nombre' => 'Traje de Saya',
+                'descripcion' => 'Traje de Saya femenino con pollera amplia, blusa colorida y pañuelo.',
+                'image_path' => 'disfraces/sayam.jpg',
+                'genero' => 'femenino',
+                'precio_alquiler' => 95.0,
+                'status' => 'disponible',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ];
+
+        foreach ($disfraces as $disfraz) {
+            Disfraz::create($disfraz);
+        }
     }
 }

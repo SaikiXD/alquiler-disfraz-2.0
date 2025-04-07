@@ -10,14 +10,14 @@ use Filament\Support\Contracts\HasColor;
 enum DisfrazStatusEnum: string implements HasLabel, HasColor
 {
     case DISPONIBLE = 'disponible';
-    case RESERVADO = 'reservado';
+    case NO_DISPONiBLE = 'no_disponible';
     case INCOMPLETO = 'incompleto';
 
     public function getLabel(): ?string
     {
         return match ($this) {
             self::DISPONIBLE => 'Disponible',
-            self::RESERVADO => 'No Disponible',
+            self::NO_DISPONiBLE => 'No Disponible',
             self::INCOMPLETO => 'Incompleto',
         };
     }
@@ -25,7 +25,7 @@ enum DisfrazStatusEnum: string implements HasLabel, HasColor
     {
         return match ($this) {
             self::DISPONIBLE => 'success',
-            self::RESERVADO => 'primary',
+            self::NO_DISPONiBLE => 'primary',
             self::INCOMPLETO => 'danger',
         };
     }

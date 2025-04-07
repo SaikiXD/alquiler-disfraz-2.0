@@ -12,11 +12,12 @@ return new class extends Migration {
     {
         Schema::create('disfrazs', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->string('image_path')->nullable();
-            $table->decimal('price', 10, 2)->default(0);
-            $table->enum('status', ['disponible', 'reservado', 'incompleto'])->default('disponible');
+            $table->string('nombre');
+            $table->text('descripcion')->nullable();
+            $table->string('image_path');
+            $table->string('genero');
+            $table->decimal('precio_alquiler', 10, 2)->default(0);
+            $table->enum('status', ['disponible', 'no_disponible', 'incompleto'])->default('disponible');
             $table->timestamps();
         });
     }

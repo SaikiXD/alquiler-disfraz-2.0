@@ -13,14 +13,9 @@ class AlquilerWidgetStats extends BaseWidget
     protected function getStats(): array
     {
         return [
-            Stat::make('Pendientes', $this->getAlquileresPendientes()),
             Stat::make('Alquilados', $this->getAlquileresActivos()),
             Stat::make('Finalizados', $this->getAlquileresFinalizados()),
         ];
-    }
-    protected function getAlquileresPendientes(): int
-    {
-        return Alquiler::where('status', AlquilerStatusEnum::PENDIENTE->value)->count();
     }
     protected function getAlquileresActivos(): int
     {

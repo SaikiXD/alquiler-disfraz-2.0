@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DisfrazPiezaEnum;
+use App\Enums\DisfrazPiezaStatusEnum;
 use App\Enums\DisfrazStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Disfraz extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'description', 'image_path', 'price', 'status'];
+    protected $fillable = ['nombre', 'descripcion', 'image_path', 'genero', 'precio_alquiler', 'status'];
     protected $casts = [
         'status' => DisfrazStatusEnum::class,
     ];
@@ -29,12 +30,12 @@ class Disfraz extends Model
     }
     public static function obtenerPrecio(int $id): ?float
     {
-        return self::where('id', $id)->value('price');
+        return self::where('id', $id)->value('precio_alquiler');
     }
     public function getStockDisponibleAttribute(): int
     {
         // Obtiene las piezas disponibles del disfraz
-        $piezasDisponibles = $this->disfrazPiezas()->where('status', DisfrazPiezaEnum::DISPONIBLE->value)->get();
+        $piezasDisponibles = $this->disfrazPiezas()->where('status', DisfrazPiezaStatusEnum::DISPONIBLE->value)->get();
         // Si no hay piezas disponibles, no hay stock
         if ($piezasDisponibles->isEmpty()) {
             return 0;
@@ -47,13 +48,13 @@ class Disfraz extends Model
     }
     public function actualizarEstado()
     {
-        $totalPiezas = $this->disfrazPiezas()->where('status', DisfrazPiezaEnum::DISPONIBLE->value)->count();
+        $totalPiezas = $this->disfrazPiezas()->where('status', DisfrazPiezaStatusEnum::DISPONIBLE->value)->count();
         $piezasAlquiladas = $this->disfrazPiezas()
-            ->where('status', DisfrazPiezaEnum::DISPONIBLE->value)
+            ->where('status', DisfrazPiezaStatusEnum::DISPONIBLE->value)
             ->where('stock', '>', 0)
             ->count();
         if ($piezasAlquiladas === 0) {
-            $this->status = DisfrazStatusEnum::RESERVADO->value;
+            $this->status = DisfrazStatusEnum::NO_DISPONiBLE->value;
         } elseif ($piezasAlquiladas === $totalPiezas) {
             $this->status = DisfrazStatusEnum::DISPONIBLE->value;
         } else {

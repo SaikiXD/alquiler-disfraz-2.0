@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
-use App\Models\AlquilerDisfraz;
-use App\Observers\AlquilerDisfrazObserver;
+use App\Policies\RolePolicy;
+use App\Policies\PermissionPolicy;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(Role::class, RolePolicy::class);
+        Gate::policy(Permission::class, PermissionPolicy::class);
     }
 }

@@ -12,8 +12,7 @@ class AlquilerDisfraz extends Model
     protected $fillable = [
         'alquiler_id',
         'disfraz_id',
-        'modo_alquiler',
-        'precio_unitario',
+        'precio_alquiler',
         'cantidad',
         'piezas_seleccionadas',
         'status',
